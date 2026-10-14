@@ -1,0 +1,7 @@
+[infra]
+infralab ansible_host=192.168.1.33
+
+
+# Группа групп (родительская группа)
+[lab:children]
+infra
