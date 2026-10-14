@@ -6,10 +6,8 @@ common_packages:
   - htop
   - ufw
   - tmux
-  - docker-ce
-  - docker-ce-cli
-  - containerd.io
-  - docker-compose-plugin
+  - docker.io
+  - docker-compose-v2
 
 common_timezone: "Europe/Moscow"
 common_swap_size: "300M"
