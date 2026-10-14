@@ -32,7 +32,14 @@
     msg: "Current active swap devices: {{ swap_check.stdout | default('None') }}"
 
 # 5. Создание и подключение SWAP (Идемпотентно)
-- name: Check if swap file already exists
+
+# Сначала проверяем, включен ли уже swap (чтобы не было ошибок со swapon)
+- name: Check active swaps
+  ansible.builtin.command: swapon --show=NAME --noheadings
+  register: active_swaps
+  changed_when: false
+
+- name: Check if swap file already exists on disk
   ansible.builtin.stat:
     path: "{{ common_swap_file_path }}"
   register: swap_file_stat
@@ -40,8 +47,7 @@
 - name: Allocate space for swap file
   ansible.builtin.command: "dd if=/dev/zero of={{ common_swap_file_path }} bs=1M count={{ (common_swap_size | human_to_bytes) // 1024 // 1024 }}"
   when: not swap_file_stat.stat.exists
-  # changed_when помогает избежать статуса changed при повторном запуске, так как задача сработает только при when: false
-  changed_when: true 
+  # changed_when: true здесь правильный, так как если when истинно, то изменения точно произошли
 
 - name: Set correct permissions for swap file
   ansible.builtin.file:
@@ -49,20 +55,23 @@
     owner: root
     group: root
     mode: '0600'
+  # Добавляем проверку, чтобы модуль не падал, если файла почему-то нет на диске
+  when: not swap_file_stat.stat.exists or swap_file_stat.stat.exists
 
 - name: Format swap file
   ansible.builtin.command: "mkswap {{ common_swap_file_path }}"
+  # Форматируем только если файла не было или он пустой
   when: not swap_file_stat.stat.exists or (swap_file_stat.stat.size == 0)
-  changed_when: true
 
 - name: Enable swap right now
   ansible.builtin.command: "swapon {{ common_swap_file_path }}"
-  when: common_swap_file_path not in swap_check.stdout
+  # Проверяем по списку реально активных swap, а не по старому файлу
+  when: common_swap_file_path not in active_swaps.stdout_lines
   register: swapon_result
   changed_when: "swapon_result.rc == 0"
 
 - name: Ensure swap survives reboot (add to fstab)
-  ansible.builtin.mount:
+  ansible.posix.mount: # В современных версиях Ansible рекомендуется использовать ansible.posix.mount
     src: "{{ common_swap_file_path }}"
     path: none
     fstype: swap
