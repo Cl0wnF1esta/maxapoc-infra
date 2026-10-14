@@ -4,6 +4,7 @@
 *.retry
 *.key
 *.pem
+!*public*.pem
 *.priv
 *.private
 *.pkcs8
@@ -22,4 +23,4 @@ ca.key
 *.bak
 *.old
 *.orig
-ansible/vault-secrets/
+ansible/vault-secrets/.vault_pass
