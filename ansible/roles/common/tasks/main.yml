@@ -1,0 +1,70 @@
+---
+# 1. Проверка ОС
+- name: Ensure target OS is Ubuntu 24.04
+  name: "Check OS distribution and version"
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == 'Ubuntu'
+      - ansible_distribution_version == '24.04'
+    fail_msg: "ERROR: This role supports only Ubuntu 24.04. Current OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+    success_msg: "OS validation passed: Ubuntu 24.04 detected."
+
+# 2. Обновление apt и установка пакетов
+- name: Update apt cache and install base packages
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+    update_cache: yes
+
+# 3. Настройка часового пояса
+- name: Set system timezone
+  community.general.timezone:
+    name: "{{ common_timezone }}"
+
+# 4. Проверка существующего SWAP
+- name: Check current swap status
+  ansible.builtin.command: swapon --show
+  register: swap_check
+  changed_when: false
+
+- name: Log current swap status
+  ansible.builtin.debug:
+    msg: "Current active swap devices: {{ swap_check.stdout | default('None') }}"
+
+# 5. Создание и подключение SWAP (Идемпотентно)
+- name: Check if swap file already exists
+  ansible.builtin.stat:
+    path: "{{ common_swap_file_path }}"
+  register: swap_file_stat
+
+- name: Allocate space for swap file
+  ansible.builtin.command: "dd if=/dev/zero of={{ common_swap_file_path }} bs=1M count={{ (common_swap_size | human_to_bytes) // 1024 // 1024 }}"
+  when: not swap_file_stat.stat.exists
+  # changed_when помогает избежать статуса changed при повторном запуске, так как задача сработает только при when: false
+  changed_when: true 
+
+- name: Set correct permissions for swap file
+  ansible.builtin.file:
+    path: "{{ common_swap_file_path }}"
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Format swap file
+  ansible.builtin.command: "mkswap {{ common_swap_file_path }}"
+  when: not swap_file_stat.stat.exists or (swap_file_stat.stat.size == 0)
+  changed_when: true
+
+- name: Enable swap right now
+  ansible.builtin.command: "swapon {{ common_swap_file_path }}"
+  when: common_swap_file_path not in swap_check.stdout
+  register: swapon_result
+  changed_when: "swapon_result.rc == 0"
+
+- name: Ensure swap survives reboot (add to fstab)
+  ansible.builtin.mount:
+    src: "{{ common_swap_file_path }}"
+    path: none
+    fstype: swap
+    opts: sw
+    state: present

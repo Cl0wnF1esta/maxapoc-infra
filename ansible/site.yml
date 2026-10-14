@@ -1,0 +1,6 @@
+---
+- name: Bring VM to base state
+  hosts: infra
+  become: true
+  roles:
+    - common
