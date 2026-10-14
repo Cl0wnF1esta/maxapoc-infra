@@ -4,7 +4,6 @@
 *.retry
 *.key
 *.pem
-!*public*.pem
 *.priv
 *.private
 *.pkcs8
