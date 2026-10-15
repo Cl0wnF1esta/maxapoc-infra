@@ -1,11 +1,10 @@
 ---
 # 1. Проверка ОС
-- name: Ensure target OS is Ubuntu 24.04
-  name: "Check OS distribution and version"
+- name: Check OS distribution and version
   ansible.builtin.assert:
     that:
-      - ansible_distribution == 'Ubuntu'
-      - ansible_distribution_version == '24.04'
+      - ansible_facts['distribution'] == 'Ubuntu'
+      - ansible_facts['distribution_version'] == '24.04'
     fail_msg: "ERROR: This role supports only Ubuntu 24.04. Current OS: {{ ansible_distribution }} {{ ansible_distribution_version }}"
     success_msg: "OS validation passed: Ubuntu 24.04 detected."
 
@@ -21,33 +20,20 @@
   community.general.timezone:
     name: "{{ common_timezone }}"
 
-# 4. Проверка существующего SWAP
-- name: Check current swap status
-  ansible.builtin.command: swapon --show
-  register: swap_check
-  changed_when: false
-
-- name: Log current swap status
-  ansible.builtin.debug:
-    msg: "Current active swap devices: {{ swap_check.stdout | default('None') }}"
-
-# 5. Создание и подключение SWAP (Идемпотентно)
-
-# Сначала проверяем, включен ли уже swap (чтобы не было ошибок со swapon)
-- name: Check active swaps
-  ansible.builtin.command: swapon --show=NAME --noheadings
-  register: active_swaps
-  changed_when: false
-
-- name: Check if swap file already exists on disk
+# 4. Проверка и создание SWAP (Безопасно для check mode)
+- name: Check if swap file already exists
   ansible.builtin.stat:
     path: "{{ common_swap_file_path }}"
   register: swap_file_stat
 
 - name: Allocate space for swap file
   ansible.builtin.command: "dd if=/dev/zero of={{ common_swap_file_path }} bs=1M count={{ (common_swap_size | human_to_bytes) // 1024 // 1024 }}"
-  when: not swap_file_stat.stat.exists
-  # changed_when: true здесь правильный, так как если when истинно, то изменения точно произошли
+  # Файл создается только если его нет И мы не в режиме тестирования (--check)
+  when: 
+    - not swap_file_stat.stat.exists
+    - not ansible_check_mode
+  # Говорим Ansible, что эта команда ВСЕГДА вносит изменения, если условие выше выполнилось
+  changed_when: true
 
 - name: Set correct permissions for swap file
   ansible.builtin.file:
@@ -55,25 +41,32 @@
     owner: root
     group: root
     mode: '0600'
-  # Добавляем проверку, чтобы модуль не падал, если файла почему-то нет на диске
-  when: not swap_file_stat.stat.exists or swap_file_stat.stat.exists
+  # Предотвращаем падение в check mode: если файла нет и включен --check, задача просто пропускается
+  when: swap_file_stat.stat.exists or not ansible_check_mode
 
 - name: Format swap file
   ansible.builtin.command: "mkswap {{ common_swap_file_path }}"
-  # Форматируем только если файла не было или он пустой
-  when: not swap_file_stat.stat.exists or (swap_file_stat.stat.size == 0)
+  # Форматируем только если файл существует (или создался) и в нем 0 байт/его не было
+  when: 
+    - not ansible_check_mode
+    - not swap_file_stat.stat.exists or (swap_file_stat.stat.size == 0)
+  changed_when: true
 
-- name: Enable swap right now
-  ansible.builtin.command: "swapon {{ common_swap_file_path }}"
-  # Проверяем по списку реально активных swap, а не по старому файлу
-  when: common_swap_file_path not in active_swaps.stdout_lines
-  register: swapon_result
-  changed_when: "swapon_result.rc == 0"
-
-- name: Ensure swap survives reboot (add to fstab)
-  ansible.posix.mount: # В современных версиях Ansible рекомендуется использовать ansible.posix.mount
+- name: Ensure swap survives reboot and is activated
+  ansible.builtin.mount:
     src: "{{ common_swap_file_path }}"
     path: none
     fstype: swap
     opts: sw
-    state: present
+    # state: present только добавляет в fstab (безопасно для check mode), 
+    # но встроенный модуль mount для fstype: swap не умеет делать 'mounted' штатными средствами без костылей.
+    state: present 
+
+- name: Enable swap right now
+  ansible.builtin.command: "swapon {{ common_swap_file_path }}"
+  # Используем встроенные факты Ansible вместо внешних команд swapon --show.
+  # Проверяем, нет ли уже нашего файла в списке активных swap-устройств.
+  when: 
+    - not ansible_check_mode
+    - ansible_facts['swaps'] | selectattr('filename', 'equalto', common_swap_file_path) | list | length == 0
+  changed_when: true

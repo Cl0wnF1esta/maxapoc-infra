@@ -1,13 +1,11 @@
 ---
-# Список базовых утилит для диагностики, дебага и работы
+# Список базовых утилит для диагностики, дебага и работы с сетью
 common_packages:
   - curl
   - openssh-server
   - htop
   - ufw
   - tmux
-  - docker.io
-  - docker-compose-v2
 
 common_timezone: "Europe/Moscow"
 common_swap_size: "300M"
