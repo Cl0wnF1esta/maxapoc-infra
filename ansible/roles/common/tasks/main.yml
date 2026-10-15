@@ -26,6 +26,7 @@
   ansible.builtin.command:
     cmd: "dd if=/dev/zero of={{ common_swap_file_path }} bs=1M count={{ common_swap_size_mb }}"
     creates: "{{ common_swap_file_path }}"
+  register: swap_file_created
 
 # Шаг 2. Права 0600
 - name: Set permissions on swap file
@@ -34,6 +35,7 @@
     owner: root
     group: root
     mode: "0600"
+  when: not (ansible_check_mode and swap_file_created.changed)
 
 # Шаг 3a. Проверить разметку swap
 - name: Check swap file signature
