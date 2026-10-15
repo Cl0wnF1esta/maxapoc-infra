@@ -20,53 +20,47 @@
   community.general.timezone:
     name: "{{ common_timezone }}"
 
-# 4. Проверка и создание SWAP (Безопасно для check mode)
-#- name: Check if swap file already exists
-#  ansible.builtin.stat:
-#    path: "{{ common_swap_file_path }}"
-#  register: swap_file_stat
-#
-#- name: Allocate space for swap file
-#  ansible.builtin.command: "dd if=/dev/zero of={{ common_swap_file_path }} bs=1M count={{ (common_swap_size | human_to_bytes) // 1024 // 1024 }}"
-#  # Файл создается только если его нет И мы не в режиме тестирования (--check)
-#  when: 
-#    - not swap_file_stat.stat.exists
-#    - not ansible_check_mode
-#  # Говорим Ansible, что эта команда ВСЕГДА вносит изменения, если условие выше выполнилось
-#  changed_when: true
-#
-#- name: Set correct permissions for swap file
-#  ansible.builtin.file:
-#    path: "{{ common_swap_file_path }}"
-#    owner: root
-#    group: root
-#    mode: '0600'
-#  # Предотвращаем падение в check mode: если файла нет и включен --check, задача просто пропускается
-#  when: swap_file_stat.stat.exists or not ansible_check_mode
-#
-#- name: Format swap file
-#  ansible.builtin.command: "mkswap {{ common_swap_file_path }}"
-#  # Форматируем только если файл существует (или создался) и в нем 0 байт/его не было
-#  when: 
-#    - not ansible_check_mode
-#    - not swap_file_stat.stat.exists or (swap_file_stat.stat.size == 0)
-#  changed_when: true
-#
-#- name: Ensure swap survives reboot and is activated
-#  ansible.builtin.mount:
-#    src: "{{ common_swap_file_path }}"
-#    path: none
-#    fstype: swap
-#    opts: sw
-#    # state: present только добавляет в fstab (безопасно для check mode), 
-#    # но встроенный модуль mount для fstype: swap не умеет делать 'mounted' штатными средствами без костылей.
-#    state: present
-#
-#- name: Enable swap right now
-#  ansible.builtin.command: "swapon {{ common_swap_file_path }}"
-#  # Используем встроенные факты Ansible вместо внешних команд swapon --show.
-#  # Проверяем, нет ли уже нашего файла в списке активных swap-устройств.
-#  when: 
-#    - not ansible_check_mode
-#    - ansible_facts['swaps'] | selectattr('filename', 'equalto', common_swap_file_path) | list | length == 0
-#  changed_when: true
+# 4. SWAP
+# Шаг 1. Создать файл
+- name: Create swap file
+  ansible.builtin.command:
+    cmd: "dd if=/dev/zero of={{ common_swap_file_path }} bs=1M count={{ common_swap_size_mb }}"
+    creates: "{{ common_swap_file_path }}"
+  register: swap_file_created
+
+# Шаг 2. Права 0600
+- name: Set permissions on swap file
+  ansible.builtin.file:
+    path: "{{ common_swap_file_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+
+# Шаг 3. Разметить как swap
+- name: Format swap file
+  ansible.builtin.command:
+    cmd: "mkswap {{ common_swap_file_path }}"
+  when: swap_file_created.changed
+
+# Шаг 4а. Посмотреть, какой swap активен
+- name: Check active swap
+  ansible.builtin.command:
+    cmd: "swapon --show"
+  register: swap_active
+  changed_when: false
+  check_mode: false
+
+# Шаг 4б. Включить, если не активен
+- name: Enable swap
+  ansible.builtin.command:
+    cmd: "swapon {{ common_swap_file_path }}"
+  when: common_swap_file_path not in swap_active.stdout
+
+# Шаг 5. Запись в fstab, чтобы swap пережил перезагрузку
+- name: Add swap to fstab
+  ansible.posix.mount:
+    src: "{{ common_swap_file_path }}"
+    path: none
+    fstype: swap
+    opts: sw
+    state: present

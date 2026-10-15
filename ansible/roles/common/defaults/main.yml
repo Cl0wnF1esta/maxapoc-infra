@@ -7,6 +7,6 @@ common_packages:
   - ufw
   - tmux
 
-common_timezone: "UTC"
-common_swap_size: "300M"
+common_timezone: "Etc/UTC"
+common_swap_size_mb: 300
 common_swap_file_path: "/swapfile"
