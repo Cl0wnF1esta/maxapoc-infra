@@ -23,3 +23,4 @@ ca.key
 *.old
 *.orig
 ansible/vault-secrets/.vault_pass
+ansible/collections/
