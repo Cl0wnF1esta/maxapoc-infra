@@ -23,7 +23,7 @@
     port: 22
     proto: tcp
 
-- name: Allow all access to tcp port {{ item }}
+- name: Allow all access to tcp ports
   community.general.ufw:
     rule: allow
     port: '{{ item }}'
@@ -32,12 +32,12 @@
 
 - name: Allow outgoings
   community.general.ufw:
-    direction: out
+    direction: outgoing
     policy: allow
     
 - name: Deny incomings
   community.general.ufw:
-    direction: in
+    direction: incoming
     policy: deny
       
 - name: Enable UFW
