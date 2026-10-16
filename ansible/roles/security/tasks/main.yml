@@ -1,0 +1,45 @@
+---
+# Настройка sshd
+- name: Configure sshd-file
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/00-hardening.conf
+    owner: root
+    group: root
+    mode: '0600'
+    validate: /usr/sbin/sshd -t -f %s
+    content: |
+      # Security & Authentification
+      PermitRootLogin no
+      PubkeyAuthentication yes
+      PasswordAuthentication no
+      PermitEmptyPasswords no
+      KbdInteractiveAuthentication no
+  notify: Reload SSH
+  
+# Configure ufw
+- name: Allow all access to tcp port 22
+  community.general.ufw:
+    rule: limit #ufw will deny connections if an IP address has attempted to initiate 6 or more connections in the last 30 seconds.
+    port: 22
+    proto: tcp
+
+- name: Allow all access to tcp port {{ item }}
+  community.general.ufw:
+    rule: allow
+    port: '{{ item }}'
+    proto: tcp
+  loop: "{{ security_ufw_allowed_ports }}"
+
+- name: Allow outgoings
+  community.general.ufw:
+    direction: out
+    policy: allow
+    
+- name: Deny incomings
+  community.general.ufw:
+    direction: in
+    policy: deny
+      
+- name: Enable UFW
+  community.general.ufw:
+    state: enabled
