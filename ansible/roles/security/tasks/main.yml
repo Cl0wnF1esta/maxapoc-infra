@@ -29,8 +29,8 @@
     port: '{{ item.port }}'
     proto: '{{ item.proto }}'
     src: '{{ item.src | default(omit) }}'
+    comment: "{{ item.name }}"
   loop: "{{ security_ufw_allowed_ports }}"
-  comment: "{{ item.name }}"
 
 - name: Allow outgoings
   community.general.ufw:
