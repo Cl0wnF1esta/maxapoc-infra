@@ -1,0 +1,45 @@
+---
+# 1. Предустановка пакетов для создания ключа и доступа к репозиторию Docker
+- name: Pre-install packages for docker repo key
+  ansible.builtin.apt:
+    name: "{{ docker_prereq_packages }}"
+    state: present
+    update_cache: yes
+    
+# 2. Создание директории для хранения ключа репозитория Docker
+- name: Create directory for repo-key
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    mode: "0755"
+    state: directory
+    
+# 3. Скачивание и размещение ключа для доступа к репозиторию Docker
+- name: Download repo-key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: "0644"
+    
+# 4. Добавление репозитория Docker к списку пакетов Apt
+- name: Add the repository to Apt sources
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: deb
+    uris: https://download.docker.com/linux/ubuntu
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: stable
+    signed_by: /etc/apt/keyrings/docker.asc
+    
+# 5. Установка пакетов Docker
+- name: Install packages Docker from repo
+  ansible.builtin.apt:
+    name: "{{ docker_packages }}"
+    state: present
+    update_cache: yes
+    
+# 6. Проверка статуса и включение Docker
+- name: Check docker status and autorun
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
