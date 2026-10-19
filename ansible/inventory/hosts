@@ -1,5 +1,5 @@
 [infra]
-infralab ansible_host=192.168.1.33
+infralab ansible_host=192.168.56.10
 
 
 # Группа групп (родительская группа)

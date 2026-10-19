@@ -12,4 +12,4 @@ security_ufw_allowed_ports:
   - name: Zabbix(test)
     proto: tcp
     port: 10050
-    src: 192.168.1.39        # на проде в TimeWeb 3 записи Server=HOSTER_ZABBIX_1,HOSTER_ZABBIX_2,HOSTER_ZABBIX_3
+    src: 192.168.56.2        # на проде в TimeWeb 3 записи Server=HOSTER_ZABBIX_1,HOSTER_ZABBIX_2,HOSTER_ZABBIX_3
