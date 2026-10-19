@@ -2,3 +2,14 @@ ansible_user: user1
 ansible_port: 22
 ansible_ssh_private_key_file: SSH_PRIVATE_KEY_FILE
 common_swap_size_mb: 512
+security_ufw_allowed_ports:
+  - name: XRay(VPN)-inbounds
+    proto: tcp
+    port: "33000:38000"
+  - name: WireGuard-tunnel
+    proto: udp
+    port: 51820
+  - name: Zabbix(test)
+    proto: tcp
+    port: 10050
+    src: 192.168.1.39        # на проде в TimeWeb 3 записи Server=HOSTER_ZABBIX_1,HOSTER_ZABBIX_2,HOSTER_ZABBIX_3
