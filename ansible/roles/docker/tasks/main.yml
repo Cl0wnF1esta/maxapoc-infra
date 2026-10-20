@@ -38,10 +38,9 @@
 # 6. Установка пакетов Docker
 - name: Install packages Docker from repo
   ansible.builtin.apt:
-    name: "{{ item.name }}={{ item.version }}"
+    name: "{{ docker_packages | map(attribute='name') | zip(docker_packages | map(attribute='version')) | map('join', '=') | list }}"
     state: present
     allow_change_held_packages: false
-  loop: "{{ docker_packages }}"
 
 # 7. Зафиксировать версии пакетов от обновлений
 - name: Hold packages versions for upgrade
