@@ -33,7 +33,8 @@
 # 5. Обновление кэша Apt
 - name: Apt update cache
   ansible.builtin.apt:
-    update_cache: yes    
+    update_cache: yes
+  changed_when: false
     
 # 6. Установка пакетов Docker
 - name: Install packages Docker from repo

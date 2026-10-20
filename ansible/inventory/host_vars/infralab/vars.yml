@@ -1,6 +1,9 @@
+# auth
 ansible_user: user1
 ansible_port: 22
 ansible_ssh_private_key_file: SSH_PRIVATE_KEY_FILE
+
+# swap & ufw
 common_swap_size_mb: 512
 security_ufw_allowed_ports:
   - name: XRay(VPN)-inbounds
@@ -13,3 +16,7 @@ security_ufw_allowed_ports:
     proto: tcp
     port: 10050
     src: 192.168.56.2        # на проде в TimeWeb 3 записи Server=HOSTER_ZABBIX_1,HOSTER_ZABBIX_2,HOSTER_ZABBIX_3
+
+# monitoring_stack
+grafana_admin_password: "{{ vault_grafana_admin_password }}"
+telegram_token: "{{ vault_telegram_token }}"

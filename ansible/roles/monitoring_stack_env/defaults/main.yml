@@ -1,0 +1,3 @@
+---
+# Путь к окружению
+monitoring_stack_env_dir: /opt/environment
