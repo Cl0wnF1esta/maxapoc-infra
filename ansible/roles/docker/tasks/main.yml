@@ -30,20 +30,27 @@
     components: stable
     signed_by: /etc/apt/keyrings/docker.asc
     
-# 5. Установка пакетов Docker
+# 5. Обновление кэша Apt
+- name: Apt update cache
+  ansible.builtin.apt:
+    update_cache: yes    
+    
+# 6. Установка пакетов Docker
 - name: Install packages Docker from repo
   ansible.builtin.apt:
-    name: "{{ docker_packages }}"
+    name: "{{ item.name }}={{ item.version }}"
     state: present
-    update_cache: yes
+    allow_change_held_packages: false
+  loop: "{{ docker_packages }}"
 
-# 6. Зафиксировать версии пакетов от обновлений
+# 7. Зафиксировать версии пакетов от обновлений
 - name: Hold packages versions for upgrade
   ansible.builtin.dpkg_selections:
-    name: "{{ docker_packages }}"
+    name: "{{ item.name }}"
     selection: hold
+  loop: "{{ docker_packages }}"
     
-# 7. Проверка статуса и включение Docker
+# 8. Проверка статуса и включение Docker
 - name: Check docker status and autorun
   ansible.builtin.service:
     name: docker

@@ -5,8 +5,13 @@ docker_prereq_packages:
   - ca-certificates
   
 docker_packages:
-  - docker-ce=5:29.8.2-1~ubuntu.24.04~noble
-  - docker-ce-cli=5:29.8.2-1~ubuntu.24.04~noble
-  - containerd.io=2.3.6-1~ubuntu.24.04~noble
-  - docker-buildx-plugin=0.37.1-1~ubuntu.24.04~noble
-  - docker-compose-plugin=5.6.0-1~ubuntu.24.04~noble
+  - name: docker-ce
+    version: "5:29.8.2-1~ubuntu.24.04~noble"
+  - name: docker-ce-cli
+    version: "5:29.8.2-1~ubuntu.24.04~noble"
+  - name: containerd.io
+    version: "2.3.6-1~ubuntu.24.04~noble"
+  - name: docker-buildx-plugin
+    version: "0.37.1-1~ubuntu.24.04~noble"
+  - name: docker-compose-plugin
+    version: "5.6.0-1~ubuntu.24.04~noble"
