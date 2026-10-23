@@ -25,3 +25,4 @@ ca.key
 ansible/vault-secrets/.vault_pass
 ansible/collections/
 LEARNING_LOG.md
+*.log
