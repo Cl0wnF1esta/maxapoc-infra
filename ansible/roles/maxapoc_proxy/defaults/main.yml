@@ -1,0 +1,19 @@
+---
+maxapoc_proxy_dest: /opt/maxapoc/proxy
+maxapoc_proxy_gh_app_repo: OWNER/APP_REPO
+maxapoc_proxy_uid: 1000
+maxapoc_proxy_gid: 1000
+maxapoc_proxy_gh_hub_repo: OWNER/HUB_REPO
+maxapoc_proxy_metrics_port: 9101
+maxapoc_proxy_metrics_bind: 127.0.0.1  #IP
+maxapoc_proxy_src_code:
+  - generate.js
+  - hub.js
+  - metrics.js
+  - package.json
+  - worker.js
+  - vps/docker-compose.yml
+  - vps/Dockerfile
+  - vps/healthcheck.js
+  - vps/observe.js
+  - vps/server.js

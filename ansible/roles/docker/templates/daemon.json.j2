@@ -1,0 +1,9 @@
+{
+{% if docker_proxy.https_proxy is defined %}
+  "proxies": {
+    "http-proxy": "{{ docker_proxy.http_proxy }}",
+    "https-proxy": "{{ docker_proxy.https_proxy }}",
+    "no-proxy": "{{ docker_proxy.no_proxy }}"
+  }
+{% endif %}
+}

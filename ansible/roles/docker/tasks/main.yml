@@ -5,7 +5,11 @@
     name: "{{ docker_prereq_packages }}"
     state: present
     update_cache: yes
-    
+  register: result_pre_install_packages
+  until: result_pre_install_packages is succeeded
+  retries: 5
+  delay: 3
+  
 # 2. Создание директории для хранения ключа репозитория Docker
 - name: Create directory for repo-key
   ansible.builtin.file:
@@ -19,6 +23,11 @@
     url: https://download.docker.com/linux/ubuntu/gpg
     dest: /etc/apt/keyrings/docker.asc
     mode: "0644"
+    timeout: 20
+  register: result_download_repo_key
+  until: result_download_repo_key is succeeded
+  retries: 5
+  delay: 3
     
 # 4. Добавление репозитория Docker к списку пакетов Apt
 - name: Add the repository to Apt sources
@@ -35,6 +44,10 @@
   ansible.builtin.apt:
     update_cache: yes
   changed_when: false
+  register: result_apt_cache_update
+  until: result_apt_cache_update is succeeded
+  retries: 5
+  delay: 3
     
 # 6. Установка пакетов Docker
 - name: Install packages Docker from repo
@@ -42,6 +55,10 @@
     name: "{{ docker_packages | map(attribute='name') | zip(docker_packages | map(attribute='version')) | map('join', '=') | list }}"
     state: present
     allow_change_held_packages: false
+  register: result_install_docker_packages
+  until: result_install_docker_packages is succeeded
+  retries: 5
+  delay: 3
 
 # 7. Зафиксировать версии пакетов от обновлений
 - name: Hold packages versions for upgrade
@@ -49,10 +66,24 @@
     name: "{{ item.name }}"
     selection: hold
   loop: "{{ docker_packages }}"
-    
-# 8. Проверка статуса и включение Docker
+  
+# 8. Настройка proxy для демона Docker
+- name: Configure Docker daemon
+  ansible.builtin.template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Docker
+  
+# 9. Проверка статуса и включение Docker
 - name: Check docker status and autorun
   ansible.builtin.service:
     name: docker
     state: started
     enabled: true
+
+# 10. Выполнение handlers сразу, а не в конце  
+- name: Apply Docker config now
+  ansible.builtin.meta: flush_handlers

@@ -1,5 +1,6 @@
 ---
-- name: Создать директорию
+# 1. Создать директорию
+- name: mkdir
   ansible.builtin.file:
     path: "{{ monitoring_stack_env_dir }}"
     state: directory
@@ -7,7 +8,8 @@
     group: root
     mode: '0700' # только для root
     
-- name: Создать файл .env из зашифрованных переменных
+# 2. Создать .env из зашифрованных переменных
+- name: make .env from secrets
   ansible.builtin.copy:
     content: |
       GRAFANA_ADMIN_PASSWORD="{{ grafana_admin_password }}"

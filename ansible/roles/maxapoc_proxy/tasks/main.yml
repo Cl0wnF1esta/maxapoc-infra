@@ -1,0 +1,67 @@
+---
+# 1. Создать рабочее пространство для разворачивания прокси на сервере
+- name: Create workspace for proxy
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode }}"
+    state: directory
+  loop: 
+    - { path: '{{ maxapoc_proxy_dest }}', mode: '0755' }
+    - { path: '{{ maxapoc_proxy_dest }}/vps', mode: '0755' }
+    - { path: '{{ maxapoc_proxy_dest }}/vps/certs', owner: '{{ maxapoc_proxy_uid }}', group: '{{ maxapoc_proxy_gid }}', mode: '0700' }
+
+# 2. Доставить код прокси на сервер
+- name: cp proxy files on server
+  ansible.builtin.copy:
+    src: "{{ maxapoc_proxy_src }}/{{ item }}"
+    dest: "{{ maxapoc_proxy_dest }}/{{ item }}"
+  loop: "{{ maxapoc_proxy_src_code }}"
+  register: code_delivery
+      
+# 3. Создать .env с контентом
+- name: make .env from secrets
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ maxapoc_proxy_dest }}/vps/.env"
+    owner: root
+    group: root
+    mode: '0600' # только для root
+  no_log: true
+
+# 4. Залить серверные сертификаты и ключ
+- name: cp server certs and key
+  ansible.builtin.copy:
+    content: "{{ item.content }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"    
+    mode: "{{ item.mode }}"
+  loop:
+    - { dest: '{{ maxapoc_proxy_dest }}/vps/certs/ca.crt', content: '{{ maxapoc_proxy_ca_crt }}', mode: '0644', owner: '{{ maxapoc_proxy_uid }}', group: '{{ maxapoc_proxy_gid }}'  }
+    - { dest: '{{ maxapoc_proxy_dest }}/vps/certs/server.crt', content: '{{ maxapoc_proxy_server_crt }}', mode: '0644', owner: '{{ maxapoc_proxy_uid }}', group: '{{ maxapoc_proxy_gid }}' }
+    - { dest: '{{ maxapoc_proxy_dest }}/vps/certs/server.key', content: '{{ maxapoc_proxy_server_key }}', mode: '0600', owner: '{{ maxapoc_proxy_uid }}', group: '{{ maxapoc_proxy_gid }}' }
+  no_log: true
+  notify: Docker compose restart if certs changed
+    
+# 5. Создать gateways.json
+- name: make gateways.json
+  ansible.builtin.copy:
+    src: "{{ maxapoc_proxy_src }}/vps/gateways.example.json"
+    dest: "{{ maxapoc_proxy_dest }}/vps/gateways.json"
+    owner: root
+    group: "{{ maxapoc_proxy_gid }}"
+    mode: '0640' # RW - root / W - группа владельца
+
+# 6. Сборка и запуск dockerfile
+- name: Build and run Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ maxapoc_proxy_dest }}/vps"  # Путь к каталогу с docker-compose.yml
+    state: present  # Аналог "up -d"
+    build: "{{ 'always' if code_delivery.changed else 'policy' }}" # Определить именился ли код для решения о сборке, см. register#2
+    wait: true  # Ждет статуса healthy
+  register: result_build_dockerfile_and_run_compose
+  until: result_build_dockerfile_and_run_compose is succeeded
+  retries: 2
+  delay: 3

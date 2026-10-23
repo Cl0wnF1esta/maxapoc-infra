@@ -2,8 +2,10 @@
 - name: Bring VM to base state
   hosts: infra
   become: true
+  environment: "{{ proxy_env }}"
   roles:
     - common
     - security
     - docker
     - monitoring_stack_env
+    - maxapoc_proxy

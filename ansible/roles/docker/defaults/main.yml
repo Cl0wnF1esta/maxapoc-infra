@@ -1,4 +1,7 @@
 ---
+# proxy для docker
+docker_proxy: "{{ proxy_env | default({}) }}"
+
 # Список утилит для Docker
 docker_prereq_packages:
   - python3-debian
