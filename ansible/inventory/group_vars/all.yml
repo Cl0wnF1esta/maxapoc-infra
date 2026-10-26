@@ -1,2 +1,7 @@
+#proxy
 maxapoc_proxy_src: /home/PROD_USER/Desktop/MaxApoc/proxy
 proxy_env: {}
+
+#monitoring_stack
+maxapoc_network_name: maxapoc_net
+maxapoc_monitoring_stack_src: /home/PROD_USER/Desktop/MaxApoc/observability

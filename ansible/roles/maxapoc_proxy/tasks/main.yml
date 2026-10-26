@@ -11,8 +11,14 @@
     - { path: '{{ maxapoc_proxy_dest }}', mode: '0755' }
     - { path: '{{ maxapoc_proxy_dest }}/vps', mode: '0755' }
     - { path: '{{ maxapoc_proxy_dest }}/vps/certs', owner: '{{ maxapoc_proxy_uid }}', group: '{{ maxapoc_proxy_gid }}', mode: '0700' }
+    
+# 2. Создать сеть для maxapoc
+- name: Create shared Docker network for MaxApoc
+  community.docker.docker_network:
+    name: "{{ maxapoc_network_name }}"
+    state: present
 
-# 2. Доставить код прокси на сервер
+# 3. Доставить код прокси на сервер
 - name: cp proxy files on server
   ansible.builtin.copy:
     src: "{{ maxapoc_proxy_src }}/{{ item }}"
@@ -20,7 +26,7 @@
   loop: "{{ maxapoc_proxy_src_code }}"
   register: code_delivery
       
-# 3. Создать .env с контентом
+# 4. Создать .env с контентом
 - name: make .env from secrets
   ansible.builtin.template:
     src: env.j2
@@ -30,7 +36,7 @@
     mode: '0600' # только для root
   no_log: true
 
-# 4. Залить серверные сертификаты и ключ
+# 5. Залить серверные сертификаты и ключ
 - name: cp server certs and key
   ansible.builtin.copy:
     content: "{{ item.content }}"
@@ -45,21 +51,21 @@
   no_log: true
   notify: Docker compose restart if certs changed
     
-# 5. Создать gateways.json
+# 6. Создать gateways.json
 - name: make gateways.json
   ansible.builtin.copy:
     src: "{{ maxapoc_proxy_src }}/vps/gateways.example.json"
     dest: "{{ maxapoc_proxy_dest }}/vps/gateways.json"
     owner: root
     group: "{{ maxapoc_proxy_gid }}"
-    mode: '0640' # RW - root / W - группа владельца
+    mode: '0640' # RW - root / R - группа владельца
 
-# 6. Сборка и запуск dockerfile
+# 7. Сборка и запуск dockerfile
 - name: Build and run Docker Compose
   community.docker.docker_compose_v2:
     project_src: "{{ maxapoc_proxy_dest }}/vps"  # Путь к каталогу с docker-compose.yml
     state: present  # Аналог "up -d"
-    build: "{{ 'always' if code_delivery.changed else 'policy' }}" # Определить именился ли код для решения о сборке, см. register#2
+    build: "{{ 'always' if code_delivery.changed else 'policy' }}" # Определить именился ли код для решения о сборке, см. register#3
     wait: true  # Ждет статуса healthy
   register: result_build_dockerfile_and_run_compose
   until: result_build_dockerfile_and_run_compose is succeeded
