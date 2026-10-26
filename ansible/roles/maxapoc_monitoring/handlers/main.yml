@@ -1,0 +1,14 @@
+---
+- name: Restart Prometheus if config or rules changed
+  community.docker.docker_compose_v2:
+    project_src: "{{ maxapoc_monitoring_dest }}"
+    services: [prometheus]
+    state: restarted
+    wait: true
+    
+- name: Restart Alertmanager if config or token changed
+  community.docker.docker_compose_v2:
+    project_src: "{{ maxapoc_monitoring_dest }}"
+    services: [alertmanager]
+    state: restarted
+    wait: true

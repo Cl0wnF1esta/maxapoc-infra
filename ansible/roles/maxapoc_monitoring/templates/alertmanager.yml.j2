@@ -1,0 +1,32 @@
+global:
+  resolve_timeout: 5m
+route:
+  receiver: telegram
+  group_by: [alertname]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h                     # предупреждения (warning) повторяются раз в 4 часа, пока проблема не устранена
+  routes:
+    - matchers: ['severity="critical"']
+      repeat_interval: 1h                 # критичные чаще
+    - matchers: ['severity="info"']
+      repeat_interval: 24h                # информационные раз в сутки
+receivers:
+  - name: telegram
+    telegram_configs:
+      - bot_token_file: /etc/alertmanager/secrets/telegram-token
+        chat_id: {{ maxapoc_monitoring_telegram_chat_id }}
+        parse_mode: HTML
+        send_resolved: true
+{% if maxapoc_monitoring_alertmanager_proxy_url %}
+        http_config:
+          proxy_url: {{ maxapoc_monitoring_alertmanager_proxy_url }}
+{% endif %}
+{% raw %}
+        message: |-
+          {{ range .Alerts }}{{ if eq .Status "firing" }}🔴{{ else }}🟢{{ end }} <b>{{ .Labels.alertname | html }}</b> ({{ .Labels.severity | html }})
+          {{ .Annotations.summary | html }}
+          {{ .Annotations.description | html }}
+
+          {{ end }}
+{% endraw %}

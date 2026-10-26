@@ -1,0 +1,76 @@
+---
+# 1. Создать рабочее пространство для разворачивания (Prometheus+Grafana will be later) на сервере
+- name: Create workspace for monitoring
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    owner: "{{ item.owner | default('root') }}"
+    group: "{{ item.group | default('root') }}"
+    mode: "{{ item.mode }}"
+    state: directory
+  loop: 
+    - { path: '{{ maxapoc_monitoring_dest }}', mode: '0755' }
+    - { path: '{{ maxapoc_monitoring_dest }}/prometheus', mode: '0755' }
+    - { path: '{{ maxapoc_monitoring_dest }}/prometheus/rules', mode: '0755' }
+    - { path: '{{ maxapoc_monitoring_dest }}/alertmanager', mode: '0755' }
+    - { path: '{{ maxapoc_monitoring_dest }}/alertmanager/secrets', owner: '{{ maxapoc_monitoring_uid }}', group: '{{ maxapoc_monitoring_gid }}', mode: '0700' }
+    
+# 2a. Создать docker-compose.yml с контентом
+- name: make docker-compose.yml *.j2 templates
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ maxapoc_monitoring_dest }}/docker-compose.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  
+# 2b. Prometheus. Создать prometheus.yml с контентом
+- name: make prometheus.yml from *.j2 templates
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: "{{ maxapoc_monitoring_dest }}/prometheus/prometheus.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Prometheus if config or rules changed
+  
+# 3. Prometheus. Копировать maxapoc-alerts.yml
+- name: cp maxapoc-alerts.yml from master
+  ansible.builtin.copy:
+    src: "{{ maxapoc_monitoring_stack_src }}/prometheus/maxapoc-alerts.yml"
+    dest: "{{ maxapoc_monitoring_dest }}/prometheus/rules/maxapoc-alerts.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Prometheus if config or rules changed
+  
+# 4. Alertmanager. Создать alertmanager.yml с контентом
+- name: make alertmanager.yml from *.j2 templates
+  ansible.builtin.template:
+    src: alertmanager.yml.j2
+    dest: "{{ maxapoc_monitoring_dest }}/alertmanager/alertmanager.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Alertmanager if config or token changed
+
+# 5. Alertmanager. Разместить telegram-token
+- name: place telegram-token
+  ansible.builtin.copy:
+    content: "{{ maxapoc_monitoring_telegram_token }}"
+    dest: "{{ maxapoc_monitoring_dest }}/alertmanager/secrets/telegram-token"
+    owner: "{{ maxapoc_monitoring_uid }}"
+    group: "{{ maxapoc_monitoring_gid }}"
+    mode: '0400'
+  notify: Restart Alertmanager if config or token changed
+  no_log: true
+  
+# 6. Запуск контейнеров
+- name: Run Containers
+  community.docker.docker_compose_v2:
+    project_src: "{{ maxapoc_monitoring_dest }}"  # Путь к каталогу с docker-compose.yml
+    state: present
+    wait: true  # Ждет состояния running
+  register: result_run_containers
+  until: result_run_containers is succeeded
+  retries: 2
+  delay: 3

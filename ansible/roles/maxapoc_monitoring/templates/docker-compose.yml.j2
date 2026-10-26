@@ -1,0 +1,52 @@
+services:
+  prometheus:
+    image: prom/prometheus:{{ maxapoc_monitoring_prometheus_version }}
+    container_name: maxapoc-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - "--storage.tsdb.retention.time={{ maxapoc_monitoring_prometheus_retention_time }}"
+      - "--storage.tsdb.retention.size={{ maxapoc_monitoring_prometheus_retention_size }}"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+    ports:
+      - "{{ maxapoc_monitoring_bind }}:9090:9090"
+    mem_limit: {{ maxapoc_monitoring_prometheus_mem_limit }}
+    cpus: {{ maxapoc_monitoring_prometheus_cpus }}
+    networks: [shared]
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "2" }
+    
+  alertmanager:
+    image: prom/alertmanager:{{ maxapoc_monitoring_alertmanager_version }}
+    container_name: maxapoc-alertmanager
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "2" }
+    mem_limit: {{ maxapoc_monitoring_alertmanager_mem_limit }}
+    cpus: {{ maxapoc_monitoring_alertmanager_cpus }}
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+      - "--data.retention={{ maxapoc_monitoring_alertmanager_retention_time }}"
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - ./alertmanager/secrets:/etc/alertmanager/secrets:ro
+      - alertmanager_data:/alertmanager
+    ports:
+      - "{{ maxapoc_monitoring_bind }}:9093:9093"
+    networks: [shared]
+      
+volumes:
+  prometheus_data:
+  alertmanager_data:
+
+networks:
+  shared:
+    external: true
+    name: {{ maxapoc_network_name }}

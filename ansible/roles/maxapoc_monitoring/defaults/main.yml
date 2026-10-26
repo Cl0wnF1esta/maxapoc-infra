@@ -1,0 +1,23 @@
+---
+#basic
+maxapoc_monitoring_dest: /opt/maxapoc/monitoring
+maxapoc_monitoring_uid: 65534
+maxapoc_monitoring_gid: 65534
+
+#prometheus
+maxapoc_monitoring_bind: 127.0.0.1
+maxapoc_monitoring_prometheus_version: v3.13.2
+maxapoc_monitoring_prometheus_retention_time: 90d     # Взят из расчетов ресурсов production VPS (compose файл проекта hobot-metrics)
+maxapoc_monitoring_prometheus_retention_size: 2GB     # Взят из расчетов ресурсов production VPS (compose файл проекта hobot-metrics)
+maxapoc_monitoring_prometheus_mem_limit: 150m     # Взят из расчетов ресурсов production VPS (compose файл проекта hobot-metrics)
+maxapoc_monitoring_prometheus_cpus: 0.3     # Взят из расчетов ресурсов production VPS (compose файл проекта hobot-metrics)
+maxapoc_monitoring_scrape_interval: 60s
+maxapoc_monitoring_scrape_timeout: 10s
+maxapoc_monitoring_proxy_target: maxapoc-proxy:9101
+
+#alertmatager&telegram
+maxapoc_monitoring_alertmanager_version: v0.28.1
+maxapoc_monitoring_alertmanager_retention_time: 120h
+maxapoc_monitoring_alertmanager_mem_limit: 64m
+maxapoc_monitoring_alertmanager_cpus: 0.2
+maxapoc_monitoring_alertmanager_proxy_url: "{{ proxy_env.https_proxy | default('') }}"
