@@ -12,3 +12,10 @@
     services: [alertmanager]
     state: restarted
     wait: true
+    
+- name: Restart Grafana if provisioning changed
+  community.docker.docker_compose_v2:
+    project_src: "{{ maxapoc_monitoring_dest }}"
+    services: [grafana]
+    state: restarted
+    wait: true

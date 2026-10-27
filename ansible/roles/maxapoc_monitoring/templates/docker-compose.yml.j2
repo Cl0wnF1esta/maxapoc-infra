@@ -41,10 +41,34 @@ services:
     ports:
       - "{{ maxapoc_monitoring_bind }}:9093:9093"
     networks: [shared]
-      
+    
+  grafana:
+    image: grafana/grafana:{{ maxapoc_monitoring_grafana_version }}
+    container_name: maxapoc-grafana
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options: { max-size: "5m", max-file: "2" }
+    mem_limit: {{ maxapoc_monitoring_grafana_mem_limit }}
+    cpus: {{ maxapoc_monitoring_grafana_cpus }}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/secrets:/run/secrets:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "{{ maxapoc_monitoring_bind }}:3000:3000"
+    networks: [shared]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/admin_password
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    depends_on: [prometheus]
+       
 volumes:
   prometheus_data:
   alertmanager_data:
+  grafana_data:
 
 networks:
   shared:

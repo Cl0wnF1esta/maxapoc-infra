@@ -1,6 +1,6 @@
 ---
-# 1. Создать рабочее пространство для разворачивания (Prometheus+Grafana will be later) на сервере
-- name: Create workspace for monitoring
+# 1. Создать рабочее пространство для разворачивания (Prometheus+Alertmaneger+Grafana) на сервере
+- name: Create workspace for monitoring stack
   ansible.builtin.file:
     path: "{{ item.path }}"
     owner: "{{ item.owner | default('root') }}"
@@ -13,6 +13,12 @@
     - { path: '{{ maxapoc_monitoring_dest }}/prometheus/rules', mode: '0755' }
     - { path: '{{ maxapoc_monitoring_dest }}/alertmanager', mode: '0755' }
     - { path: '{{ maxapoc_monitoring_dest }}/alertmanager/secrets', owner: '{{ maxapoc_monitoring_uid }}', group: '{{ maxapoc_monitoring_gid }}', mode: '0700' }
+    - { path: '{{ maxapoc_monitoring_dest }}/grafana', mode: '0755' }
+    - { path: '{{ maxapoc_monitoring_dest }}/grafana/provisioning', mode: '0755' }
+    - { path: '{{ maxapoc_monitoring_dest }}/grafana/provisioning/datasources', mode: '0755' }
+    - { path: '{{ maxapoc_monitoring_dest }}/grafana/provisioning/dashboards', mode: '0755' }
+    - { path: '{{ maxapoc_monitoring_dest }}/grafana/provisioning/dashboards/maxapoc', mode: '0755' }
+    - { path: '{{ maxapoc_monitoring_dest }}/grafana/secrets', owner: '{{ maxapoc_monitoring_grafana_uid }}', group: '{{ maxapoc_monitoring_grafana_gid }}', mode: '0700' }
     
 # 2a. Создать docker-compose.yml с контентом
 - name: make docker-compose.yml *.j2 templates
@@ -24,7 +30,7 @@
     mode: '0644'
   
 # 2b. Prometheus. Создать prometheus.yml с контентом
-- name: make prometheus.yml from *.j2 templates
+- name: "Prometheus | make prometheus.yml from *.j2 templates"
   ansible.builtin.template:
     src: prometheus.yml.j2
     dest: "{{ maxapoc_monitoring_dest }}/prometheus/prometheus.yml"
@@ -34,7 +40,7 @@
   notify: Restart Prometheus if config or rules changed
   
 # 3. Prometheus. Копировать maxapoc-alerts.yml
-- name: cp maxapoc-alerts.yml from master
+- name: "Prometheus | cp maxapoc-alerts.yml from master"
   ansible.builtin.copy:
     src: "{{ maxapoc_monitoring_stack_src }}/prometheus/maxapoc-alerts.yml"
     dest: "{{ maxapoc_monitoring_dest }}/prometheus/rules/maxapoc-alerts.yml"
@@ -44,7 +50,7 @@
   notify: Restart Prometheus if config or rules changed
   
 # 4. Alertmanager. Создать alertmanager.yml с контентом
-- name: make alertmanager.yml from *.j2 templates
+- name: "Alermanager | make alertmanager.yml from *.j2 templates"
   ansible.builtin.template:
     src: alertmanager.yml.j2
     dest: "{{ maxapoc_monitoring_dest }}/alertmanager/alertmanager.yml"
@@ -54,7 +60,7 @@
   notify: Restart Alertmanager if config or token changed
 
 # 5. Alertmanager. Разместить telegram-token
-- name: place telegram-token
+- name: "Alertmanager | place telegram-token"
   ansible.builtin.copy:
     content: "{{ maxapoc_monitoring_telegram_token }}"
     dest: "{{ maxapoc_monitoring_dest }}/alertmanager/secrets/telegram-token"
@@ -63,9 +69,56 @@
     mode: '0400'
   notify: Restart Alertmanager if config or token changed
   no_log: true
+
+# 6. Grafana. Копировать dashboards-maxapoc.yml
+- name: "Grafana | cp dashboards-maxapoc.yml from master"
+  ansible.builtin.copy:
+    src: "{{ maxapoc_monitoring_stack_src }}/grafana/provisioning/dashboards-maxapoc.yml"
+    dest: "{{ maxapoc_monitoring_dest }}/grafana/provisioning/dashboards/maxapoc.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Grafana if provisioning changed
   
-# 6. Запуск контейнеров
-- name: Run Containers
+# 7. Grafana. Копировать maxapoc-proxy.json & maxapoc-ai-hub.json
+- name: "Grafana | Copy dashboard JSON files from master"
+  ansible.builtin.copy:
+    src: "{{ maxapoc_monitoring_stack_src }}/grafana/dashboards/{{ item }}"
+    dest: '{{ maxapoc_monitoring_dest }}/grafana/provisioning/dashboards/maxapoc/{{ item }}'
+    owner: root
+    group: root
+    mode: '0644'
+  loop: "{{ maxapoc_monitoring_grafana_dashboards }}"
+  
+# 8. Grafana. Проверить, существовал ли файл admin_password запуска
+- name: "Grafana | Exists grafana_password file check"
+  ansible.builtin.stat:
+    path: "{{ maxapoc_monitoring_dest }}/grafana/secrets/admin_password"
+  register: grafana_old_password_file
+
+# 9. Grafana. Разместить admin_password
+- name: "Grafana | place admin password"
+  ansible.builtin.copy:
+    content: "{{ maxapoc_monitoring_grafana_admin_password }}"
+    dest: "{{ maxapoc_monitoring_dest }}/grafana/secrets/admin_password"
+    owner: "{{ maxapoc_monitoring_grafana_uid }}"
+    group: "{{ maxapoc_monitoring_grafana_gid }}"
+    mode: '0400'
+  register: grafana_password_file_status
+  no_log: true
+  
+# 10. Grafana. Создать prometheus.yml с контентом
+- name: "Grafana | make prometheus.yml from *.j2 templates"
+  ansible.builtin.template:
+    src: grafana-datasource.yml.j2
+    dest: "{{ maxapoc_monitoring_dest }}/grafana/provisioning/datasources/prometheus.yml"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Grafana if provisioning changed
+
+# 11. Запуск контейнеров
+- name: Run Services(containers)
   community.docker.docker_compose_v2:
     project_src: "{{ maxapoc_monitoring_dest }}"  # Путь к каталогу с docker-compose.yml
     state: present
@@ -74,3 +127,32 @@
   until: result_run_containers is succeeded
   retries: 2
   delay: 3
+
+# 12. Проверка здоровья контейнеров
+- name: Wait until services is healthy
+  ansible.builtin.uri:
+    url: "{{ item.url }}"
+    status_code: 200
+    return_content: true
+  register: services_health
+  until: >
+    services_health.status == 200 and 
+    (item.json_check is not defined or (services_health.json is defined and services_health.json.database == "ok"))
+  retries: 10
+  delay: 5
+  changed_when: false      # проверка ничего не меняет
+  loop:
+    - { name: 'prometheus', url: 'http://127.0.0.1:9090/-/ready' }
+    - { name: 'alertmanager', url: 'http://127.0.0.1:9093/-/ready' }
+    - { name: 'grafana', url: 'http://127.0.0.1:3000/api/health', json_check: true }
+
+# 13. Обновить пароль в Grafana CLI внутри контейнера, если файл изменился 
+- name: "Grafana | update admin_password into container with grafana cli"
+  community.docker.docker_container_exec:
+    container: maxapoc-grafana
+    command: >
+      sh -c 'grafana cli admin reset-admin-password --password-from-stdin < /run/secrets/admin_password'
+  when:
+    - grafana_password_file_status.changed
+    - grafana_old_password_file.stat.exists
+  no_log: true

@@ -1,10 +1,10 @@
 ---
-#basic
+# basic
 maxapoc_monitoring_dest: /opt/maxapoc/monitoring
 maxapoc_monitoring_uid: 65534
 maxapoc_monitoring_gid: 65534
 
-#prometheus
+# prometheus
 maxapoc_monitoring_bind: 127.0.0.1
 maxapoc_monitoring_prometheus_version: v3.13.2
 maxapoc_monitoring_prometheus_retention_time: 90d     # Взят из расчетов ресурсов production VPS (compose файл проекта hobot-metrics)
@@ -15,9 +15,21 @@ maxapoc_monitoring_scrape_interval: 60s
 maxapoc_monitoring_scrape_timeout: 10s
 maxapoc_monitoring_proxy_target: maxapoc-proxy:9101
 
-#alertmatager&telegram
+# alertmatager & telegram
 maxapoc_monitoring_alertmanager_version: v0.28.1
 maxapoc_monitoring_alertmanager_retention_time: 120h
 maxapoc_monitoring_alertmanager_mem_limit: 64m
 maxapoc_monitoring_alertmanager_cpus: 0.2
 maxapoc_monitoring_alertmanager_proxy_url: "{{ proxy_env.https_proxy | default('') }}"
+
+# grafana
+maxapoc_monitoring_grafana_uid: 472
+maxapoc_monitoring_grafana_gid: 472
+maxapoc_monitoring_grafana_version: 13.2.0
+maxapoc_monitoring_grafana_mem_limit: 400m
+maxapoc_monitoring_grafana_cpus: 0.5
+maxapoc_monitoring_grafana_dashboards:
+  - maxapoc-proxy.json
+  - maxapoc-ai-hub.json
+maxapoc_monitoring_grafana_datasource_name: Prometheus
+maxapoc_monitoring_grafana_datasource_uid: maxapoc-prometheus
