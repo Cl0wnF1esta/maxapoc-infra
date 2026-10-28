@@ -1,5 +1,5 @@
 ---
-- name: Docker compose restart if certs changed
+- name: Restart proxy if certs or gateways changed
   community.docker.docker_compose_v2:
     project_src: "{{ maxapoc_proxy_dest }}/vps"  # Путь к каталогу с docker-compose.yml
     state: restarted  # docker compose restart
