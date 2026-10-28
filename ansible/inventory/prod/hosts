@@ -1,10 +1,9 @@
-[infra]
-infralab ansible_host=192.168.56.10
-
+[prod]
+maxapoc-prod ansible_host=PROD_ADDRESS
 
 # Группа групп (родительская группа)
-[lab:children]
-infra
+[infra:children]
+prod
 
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3

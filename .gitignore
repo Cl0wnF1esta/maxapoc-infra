@@ -22,7 +22,7 @@ ca.key
 *.bak
 *.old
 *.orig
-ansible/vault-secrets/.vault_pass
+ansible/vault-secrets/
 ansible/collections/
 LEARNING_LOG.md
 *.log
