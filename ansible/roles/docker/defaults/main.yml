@@ -1,4 +1,6 @@
 ---
+# basic
+docker_live_restore: true
 # proxy для docker
 docker_proxy: "{{ proxy_env | default({}) }}"
 

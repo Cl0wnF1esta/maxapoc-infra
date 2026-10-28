@@ -28,8 +28,14 @@
   until: result_download_repo_key is succeeded
   retries: 5
   delay: 3
+
+# 4. Удаление существующего на сервере docker.list для предотвращения дубликата в списке пакетов Apt
+- name: Remove legacy docker.list (from official install docs) to avoid duplicate apt source
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/docker.list
+    state: absent
     
-# 4. Добавление репозитория Docker к списку пакетов Apt
+# 5. Добавление репозитория Docker к списку пакетов Apt
 - name: Add the repository to Apt sources
   ansible.builtin.deb822_repository:
     name: docker
@@ -39,7 +45,7 @@
     components: stable
     signed_by: /etc/apt/keyrings/docker.asc
     
-# 5. Обновление кэша Apt
+# 6. Обновление кэша Apt
 - name: Apt update cache
   ansible.builtin.apt:
     update_cache: yes
@@ -49,7 +55,7 @@
   retries: 5
   delay: 3
     
-# 6. Установка пакетов Docker
+# 7. Установка пакетов Docker
 - name: Install packages Docker from repo
   ansible.builtin.apt:
     name: "{{ docker_packages | map(attribute='name') | zip(docker_packages | map(attribute='version')) | map('join', '=') | list }}"
@@ -60,14 +66,14 @@
   retries: 5
   delay: 3
 
-# 7. Зафиксировать версии пакетов от обновлений
+# 8. Зафиксировать версии пакетов от обновлений
 - name: Hold packages versions for upgrade
   ansible.builtin.dpkg_selections:
     name: "{{ item.name }}"
     selection: hold
   loop: "{{ docker_packages }}"
   
-# 8. Настройка proxy для демона Docker
+# 9. Настройка proxy для демона Docker
 - name: Configure Docker daemon
   ansible.builtin.template:
     src: daemon.json.j2
@@ -77,13 +83,13 @@
     mode: '0644'
   notify: Restart Docker
   
-# 9. Проверка статуса и включение Docker
+# 10. Проверка статуса и включение Docker
 - name: Check docker status and autorun
   ansible.builtin.service:
     name: docker
     state: started
     enabled: true
 
-# 10. Выполнение handlers сразу, а не в конце  
+# 11. Выполнение handlers сразу, а не в конце  
 - name: Apply Docker config now
   ansible.builtin.meta: flush_handlers
