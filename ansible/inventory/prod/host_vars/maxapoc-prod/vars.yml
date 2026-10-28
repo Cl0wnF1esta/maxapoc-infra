@@ -1,26 +1,42 @@
 # auth
-ansible_user: root
+ansible_user: PROD_USER
 ansible_port: 22
 ansible_ssh_private_key_file: SSH_PRIVATE_KEY_FILE
 
 # swap & ufw
 common_swap_size_mb: 1024
-#security_ufw_allowed_ports:
-#  - name: XRay(VPN)-inbounds
-#    proto: tcp
-#    port: "33000:38000"
-#  - name: WireGuard-tunnel
-#    proto: udp
-#    port: 51820
-#  - name: Zabbix(test)
-#    proto: tcp
-#    port: 10050
-#    src: 192.168.56.2        # на проде в TimeWeb 3 записи Server=HOSTER_ZABBIX_1,HOSTER_ZABBIX_2,HOSTER_ZABBIX_3
-#  - name: Maxapoc-proxy
-#    proto: tcp
-#    port: 8443
+security_ufw_allowed_ports:
+  - name: Maxapoc-proxy
+    proto: tcp
+    port: 8443
+  - name: XRay(VPN)-inbounds
+    proto: tcp
+    port: "33000:38000"
+  - name: XRay(VPN)-Subscriptions
+    proto: tcp
+    port: 2096
+  - name: XRay(VPN)-AdminPanel
+    proto: tcp
+    port: 4467
+  - name: WireGuard-tunnel
+    proto: udp
+    port: 51820
+  - name: Zabbix-hoster-1
+    proto: tcp
+    port: 10050
+    src: HOSTER_ZABBIX_1
+  - name: Zabbix-hoster-2
+    proto: tcp
+    port: 10050
+    src: HOSTER_ZABBIX_2
+  - name: Zabbix-hoster-3
+    proto: tcp
+    port: 10050
+    src: HOSTER_ZABBIX_3
 
 # maxapoc_proxy
+  # basic
+maxapoc_proxy_metrics_bind: 10.66.66.1   # Prometheus hobot-metrics забирает метрики по WireGuard
   # Certificates
 maxapoc_proxy_server_crt: "{{ vault_maxapoc_proxy_server_crt }}"
 maxapoc_proxy_server_key: "{{ vault_maxapoc_proxy_server_key }}"
@@ -34,7 +50,8 @@ maxapoc_proxy_gh_hub_token: "{{ vault_maxapoc_proxy_gh_hub_token }}"
 maxapoc_proxy_llm_odirouter_key: "{{ vault_maxapoc_proxy_llm_odirouter_key }}"
 maxapoc_proxy_llm_routeway_key: "{{ vault_maxapoc_proxy_llm_routeway_key }}"
 
-# monitoring_stack
+# maxapoc_monitoring_stack
+maxapoc_monitoring_enabled: false # на проде пока не ставим (решение Д1: не хватает памяти)
   # Alertamanger
 maxapoc_monitoring_telegram_token: "{{ vault_maxapoc_monitoring_telegram_token }}"
 maxapoc_monitoring_telegram_chat_id: "{{ vault_maxapoc_monitoring_telegram_chat_id }}"

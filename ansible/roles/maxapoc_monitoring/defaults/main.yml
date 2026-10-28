@@ -1,5 +1,6 @@
 ---
 # basic
+maxapoc_monitoring_enabled: true
 maxapoc_monitoring_dest: /opt/maxapoc/monitoring
 maxapoc_monitoring_uid: 65534
 maxapoc_monitoring_gid: 65534

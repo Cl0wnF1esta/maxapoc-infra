@@ -8,4 +8,5 @@
     - security
     - docker
     - maxapoc_proxy
-    - maxapoc_monitoring
+    - role: maxapoc_monitoring
+      when: maxapoc_monitoring_enabled | bool
