@@ -39,6 +39,10 @@ maxapoc_proxy_gh_hub_token: "{{ vault_maxapoc_proxy_gh_hub_token }}"
   # LLM-gateway keys
 maxapoc_proxy_llm_odirouter_key: "{{ vault_maxapoc_proxy_llm_odirouter_key }}"
 maxapoc_proxy_llm_routeway_key: "{{ vault_maxapoc_proxy_llm_routeway_key }}"
+  # Deploy rules
+maxapoc_proxy_build_on_server: false
+maxapoc_proxy_image: ghcr.io/cl0wnf1esta/maxapoc-proxy:sha-ded7d029df71426da43f32545e18a8b702d9068a
+maxapoc_proxy_registry_token: "{{ vault_maxapoc_proxy_registry_token }}"
 
 # monitoring_stack
   # Alertamanger

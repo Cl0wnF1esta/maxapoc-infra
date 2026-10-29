@@ -18,13 +18,28 @@
     name: "{{ maxapoc_network_name }}"
     state: present
 
-# 3. Доставить код прокси на сервер
-- name: cp proxy files on server
+# 3a. Доставить на сервер proxy compose file
+- name: Deliver proxy compose file
   ansible.builtin.copy:
-    src: "{{ maxapoc_proxy_src }}/{{ item }}"
-    dest: "{{ maxapoc_proxy_dest }}/{{ item }}"
-  loop: "{{ maxapoc_proxy_src_code }}"
-  register: code_delivery
+    src: "{{ maxapoc_proxy_src }}/vps/docker-compose.yml"
+    dest: "{{ maxapoc_proxy_dest }}/vps/docker-compose.yml"
+    owner: root
+    group: root
+    mode: '0644'
+
+# 3b. Доставить исходники — только для сборки на сервере
+- name: Deliver source code for build on server
+  ansible.builtin.include_tasks: build_on_server.yml
+  when: maxapoc_proxy_build_on_server | bool
+
+# 3c. Вход в реестр — только когда образ скачивается
+- name: Log in to image registry
+  community.docker.docker_login:
+    registry_url: "{{ maxapoc_proxy_registry }}"
+    username: "{{ maxapoc_proxy_registry_user }}"
+    password: "{{ maxapoc_proxy_registry_token }}"
+  no_log: true
+  when: not (maxapoc_proxy_build_on_server | bool)
       
 # 4. Создать .env с контентом
 - name: make .env from secrets
@@ -66,7 +81,8 @@
   community.docker.docker_compose_v2:
     project_src: "{{ maxapoc_proxy_dest }}/vps"  # Путь к каталогу с docker-compose.yml
     state: present  # Аналог "up -d"
-    build: "{{ 'always' if code_delivery.changed else 'policy' }}" # Определить именился ли код для решения о сборке, см. register#3
+    build: "{{ ('always' if code_delivery.changed else 'policy') if maxapoc_proxy_build_on_server | bool else 'never' }}"
+    pull: "{{ 'policy' if maxapoc_proxy_build_on_server | bool else 'missing' }}"
     wait: true  # Ждет статуса healthy
   register: result_build_dockerfile_and_run_compose
   until: result_build_dockerfile_and_run_compose is succeeded

@@ -12,8 +12,11 @@ maxapoc_proxy_src_code:
   - metrics.js
   - package.json
   - worker.js
-  - vps/docker-compose.yml
   - vps/Dockerfile
   - vps/healthcheck.js
   - vps/observe.js
   - vps/server.js
+maxapoc_proxy_build_on_server: true  # true — собирать образ на сервере из кода (запасной), false — скачивать из реестра
+maxapoc_proxy_image: maxapoc-proxy:local
+maxapoc_proxy_registry: ghcr.io
+maxapoc_proxy_registry_user: Cl0wnF1esta
