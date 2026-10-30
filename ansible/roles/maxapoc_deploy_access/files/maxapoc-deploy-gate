@@ -8,8 +8,10 @@ from="${SSH_CLIENT:-unknown}"
 from="${from%% *}"                 # адрес клиента — первое поле SSH_CLIENT
 
 deny() {
-  logger -t maxapoc-deploy-gate "denied from=${from}: ${cmd:-<empty>}"
-  echo "denied: ${cmd:-<empty>}" >&2
+  local safe
+  if [[ -z "$cmd" ]]; then safe='<empty>'; else safe=$(printf '%q' "$cmd"); fi   # непроверенный ввод — одной строкой, спецсимволы видимы
+  logger -t maxapoc-deploy-gate "denied from=${from}: ${safe}"
+  echo "denied: ${safe}" >&2
   exit 1
 }
 
