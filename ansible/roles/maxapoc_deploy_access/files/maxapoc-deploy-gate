@@ -4,13 +4,24 @@
 set -euo pipefail
 
 cmd="${SSH_ORIGINAL_COMMAND:-}"
+from="${SSH_CLIENT:-unknown}"
+from="${from%% *}"                 # адрес клиента — первое поле SSH_CLIENT
+
+deny() {
+  logger -t maxapoc-deploy-gate "denied from=${from}: ${cmd:-<empty>}"
+  echo "denied: ${cmd:-<empty>}" >&2
+  exit 1
+}
 
 case "$cmd" in
   status)
-    logger -t maxapoc-deploy-gate "allowed: $cmd"
+    logger -t maxapoc-deploy-gate "allowed from=${from}: status"
     exec sudo -n /usr/local/sbin/maxapoc-deploy-run status ;;
+  "deploy "*)
+    digest="${cmd#deploy }"        # всё после "deploy "
+    [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || deny
+    logger -t maxapoc-deploy-gate "allowed from=${from}: deploy ${digest}"
+    exec sudo -n /usr/local/sbin/maxapoc-deploy-run deploy "$digest" ;;
   *)
-    logger -t maxapoc-deploy-gate "denied: ${cmd:-<empty>}"
-    echo "denied: ${cmd:-<empty>}" >&2
-    exit 1 ;;
+    deny ;;
 esac

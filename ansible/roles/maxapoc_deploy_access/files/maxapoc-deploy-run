@@ -1,10 +1,58 @@
 #!/bin/bash
 # Действия деплоя от root. Вызывается только через sudo из maxapoc-deploy-gate.
+# Коды выхода: 0 — успех, 1 — неверный ввод, 2 — pull не удался (ничего не менялось),
+#              3 — идёт другой деплой, 4 — новая версия не стала healthy, откат выполнен, 5 — откат не удался.
 set -euo pipefail
+
+PROJECT_DIR=/opt/maxapoc/proxy/vps
+IMAGE_REPO=ghcr.io/cl0wnf1esta/maxapoc-proxy   # имя образа задано здесь; клиент присылает только digest
+WAIT_TIMEOUT=150                                # секунд на healthy (проверка здоровья раз в 60 с)
+export DOCKER_CONFIG=/root/.docker              # вход в GHCR, независимо от HOME
+
+log() { logger -t maxapoc-deploy-run "$*"; echo "$*"; }
+compose() { docker compose --env-file .env --env-file release.env "$@"; }
 
 case "${1:-}" in
   status)
     docker inspect maxapoc-proxy --format '{{.Config.Image}} {{.State.Health.Status}}' ;;
+
+  deploy)
+    digest="${2:-}"
+    [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "bad digest" >&2; exit 1; }
+    new_ref="${IMAGE_REPO}@${digest}"
+
+    exec 9>/run/maxapoc-deploy.lock
+    flock -n 9 || { echo "another deploy is running" >&2; exit 3; }
+
+    cd "$PROJECT_DIR"
+
+    # 1. Скачать заранее: если не вышло — на сервере ничего не изменилось
+    docker pull -q "$new_ref" || { log "deploy ${digest}: pull failed, nothing changed"; exit 2; }
+
+    # 2. Запомнить текущую версию для отката
+    cp -a release.env release.env.prev
+
+    # 3. Записать новую версию атомарно
+    printf 'MAXAPOC_PROXY_IMAGE=%s\n' "$new_ref" > release.env.tmp
+    chmod 0644 release.env.tmp
+    mv release.env.tmp release.env
+
+    # 4. Переключить и дождаться healthy
+    if compose up -d --no-build --wait --wait-timeout "$WAIT_TIMEOUT"; then
+      log "deploy ${digest}: OK"
+      exit 0
+    fi
+
+    # 5. Откат
+    log "deploy ${digest}: not healthy, rolling back"
+    cp -a release.env.prev release.env
+    if compose up -d --no-build --wait --wait-timeout "$WAIT_TIMEOUT"; then
+      log "deploy ${digest}: rolled back to $(cut -d= -f2- release.env)"
+      exit 4
+    fi
+    log "deploy ${digest}: ROLLBACK FAILED"
+    exit 5 ;;
+
   *)
     echo "unknown action: ${1:-<empty>}" >&2
     exit 1 ;;
