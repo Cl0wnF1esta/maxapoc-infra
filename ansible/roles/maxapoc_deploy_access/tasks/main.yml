@@ -1,0 +1,46 @@
+---
+# 1. Создать деплой юзера без пароля, с настоящей оболочкой (иначе command= не запустится)
+- name: Create deploy user
+  ansible.builtin.user:
+    name: "{{ maxapoc_deploy_user }}"
+    shell: /bin/bash
+    create_home: true
+    password_lock: true          # пароля нет и быть не может; вход только по ключу
+
+# 2. Разместить скрипт-фильтр (выполняется от пользователя деплоя)
+- name: Install deploy gate script
+  ansible.builtin.copy:
+    src: maxapoc-deploy-gate
+    dest: /usr/local/bin/maxapoc-deploy-gate
+    owner: root
+    group: root
+    mode: '0755'                 # все могут выполнять, менять — только root
+
+# 3. Разместить скрипт действий (выполняется от root через sudo)
+- name: Install deploy run script
+  ansible.builtin.copy:
+    src: maxapoc-deploy-run
+    dest: /usr/local/sbin/maxapoc-deploy-run
+    owner: root
+    group: root
+    mode: '0700'
+
+# 4. Разрешить выполнения скрипта с sudo без пароля (ровно на один скрипт)
+- name: Allow deploy user to run deploy script as root
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/maxapoc-deploy
+    owner: root
+    group: root
+    mode: '0440'
+    validate: /usr/sbin/visudo -cf %s
+    content: |
+      # {{ maxapoc_deploy_user }} может запускать от root только скрипт деплоя
+      {{ maxapoc_deploy_user }} ALL=(root) NOPASSWD: /usr/local/sbin/maxapoc-deploy-run
+
+# 5. Устрановить ключ с ограничениями
+- name: Install restricted deploy key
+  ansible.posix.authorized_key:
+    user: "{{ maxapoc_deploy_user }}"
+    key: "{{ maxapoc_deploy_pubkey }}"
+    key_options: 'restrict,command="/usr/local/bin/maxapoc-deploy-gate"'
+    exclusive: true              # в файле будет только этот ключ; чужие удаляются

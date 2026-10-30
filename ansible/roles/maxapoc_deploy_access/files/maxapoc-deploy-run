@@ -1,0 +1,11 @@
+#!/bin/bash
+# Действия деплоя от root. Вызывается только через sudo из maxapoc-deploy-gate.
+set -euo pipefail
+
+case "${1:-}" in
+  status)
+    docker inspect maxapoc-proxy --format '{{.Config.Image}} {{.State.Health.Status}}' ;;
+  *)
+    echo "unknown action: ${1:-<empty>}" >&2
+    exit 1 ;;
+esac

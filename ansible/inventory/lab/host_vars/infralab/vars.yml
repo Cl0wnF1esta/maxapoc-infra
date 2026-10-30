@@ -44,6 +44,10 @@ maxapoc_proxy_build_on_server: false
 maxapoc_proxy_image: ghcr.io/cl0wnf1esta/maxapoc-proxy:sha-ded7d029df71426da43f32545e18a8b702d9068a
 maxapoc_proxy_registry_token: "{{ vault_maxapoc_proxy_registry_token }}"
 
+# Deploy access (CI)
+maxapoc_deploy_pubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL3khiVoYf4JKPckROReibfcKjv2q7TC+KrYWgkF8bmW maxapoc-deploy@lab-ci"
+maxapoc_deploy_access_enabled: true
+
 # monitoring_stack
   # Alertamanger
 maxapoc_monitoring_telegram_token: "{{ vault_maxapoc_monitoring_telegram_token }}"

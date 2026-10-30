@@ -1,0 +1,4 @@
+---
+maxapoc_deploy_user: maxapoc-deploy
+maxapoc_deploy_pubkey: ""  # задаётся в host_vars окружения
+maxapoc_deploy_access_enabled: false

@@ -1,0 +1,16 @@
+#!/bin/bash
+# Принудительная команда для ключа CI (authorized_keys: command=...).
+# Пропускает только команды из белого списка; всё остальное — отказ и запись в журнал.
+set -euo pipefail
+
+cmd="${SSH_ORIGINAL_COMMAND:-}"
+
+case "$cmd" in
+  status)
+    logger -t maxapoc-deploy-gate "allowed: $cmd"
+    exec sudo -n /usr/local/sbin/maxapoc-deploy-run status ;;
+  *)
+    logger -t maxapoc-deploy-gate "denied: ${cmd:-<empty>}"
+    echo "denied: ${cmd:-<empty>}" >&2
+    exit 1 ;;
+esac
