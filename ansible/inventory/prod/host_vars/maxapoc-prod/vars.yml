@@ -50,6 +50,10 @@ maxapoc_proxy_gh_hub_token: "{{ vault_maxapoc_proxy_gh_hub_token }}"
 maxapoc_proxy_llm_odirouter_key: "{{ vault_maxapoc_proxy_llm_odirouter_key }}"
 maxapoc_proxy_llm_routeway_key: "{{ vault_maxapoc_proxy_llm_routeway_key }}"
 
+# Deploy access (CI)
+maxapoc_deploy_access_enabled: true
+maxapoc_deploy_pubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH5ENPFTPmUXKHuRFC0KP7JfVz0OVH3TewvP7BNrOoxl maxapoc-deploy@prod-ci"
+
 # maxapoc_monitoring_stack
 maxapoc_monitoring_enabled: false # на проде пока не ставим (решение Д1: не хватает памяти)
   # Alertamanger
