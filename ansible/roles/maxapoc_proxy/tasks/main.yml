@@ -76,10 +76,21 @@
     mode: '0640' # RW - root / R - группа владельца
   notify: Restart proxy if certs or gateways changed   # файл подключён в контейнер отдельным файлом - после замены нужен перезапуск
 
-# 7. Сборка и запуск dockerfile
+# 7. Версия образа: создаётся один раз, дальше ею владеет деплой
+- name: Create release.env if absent
+  ansible.builtin.copy:
+    dest: "{{ maxapoc_proxy_dest }}/vps/release.env"
+    content: "MAXAPOC_PROXY_IMAGE={{ maxapoc_proxy_image }}\n"
+    owner: root
+    group: root
+    mode: '0644'
+    force: false
+
+# 8. Сборка и запуск dockerfile
 - name: Build and run Docker Compose
   community.docker.docker_compose_v2:
     project_src: "{{ maxapoc_proxy_dest }}/vps"  # Путь к каталогу с docker-compose.yml
+    env_files: [.env, release.env]
     state: present  # Аналог "up -d"
     build: "{{ ('always' if code_delivery.changed else 'policy') if maxapoc_proxy_build_on_server | bool else 'never' }}"
     pull: "{{ 'policy' if maxapoc_proxy_build_on_server | bool else 'missing' }}"
