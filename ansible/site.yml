@@ -3,6 +3,16 @@
   hosts: infra
   become: true
   environment: "{{ proxy_env }}"
+  pre_tasks:
+    - name: Clean clone of APP_REPO at main (source of files for servers)
+      ansible.builtin.git:
+        repo: "{{ maxapoc_repo_url }}"
+        dest: "{{ maxapoc_repo_clone }}"
+        version: "{{ maxapoc_repo_version }}"
+        force: false
+      delegate_to: localhost
+      run_once: true
+      become: false
   roles:
     - common
     - security
