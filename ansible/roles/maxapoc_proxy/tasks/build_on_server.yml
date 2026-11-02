@@ -1,8 +1,0 @@
----
-# Запасной режим: доставить исходники прокси для сборки образа на сервере
-- name: cp proxy files on server
-  ansible.builtin.copy:
-    src: "{{ maxapoc_proxy_src }}/{{ item }}"
-    dest: "{{ maxapoc_proxy_dest }}/{{ item }}"
-  loop: "{{ maxapoc_proxy_src_code }}"
-  register: code_delivery

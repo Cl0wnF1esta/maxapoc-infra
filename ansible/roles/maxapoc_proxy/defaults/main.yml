@@ -6,17 +6,6 @@ maxapoc_proxy_gid: 1000
 maxapoc_proxy_gh_hub_repo: OWNER/HUB_REPO
 maxapoc_proxy_metrics_port: 9101
 maxapoc_proxy_metrics_bind: 127.0.0.1  #IP
-maxapoc_proxy_src_code:
-  - generate.js
-  - hub.js
-  - metrics.js
-  - package.json
-  - worker.js
-  - vps/Dockerfile
-  - vps/healthcheck.js
-  - vps/observe.js
-  - vps/server.js
-maxapoc_proxy_build_on_server: true  # true — собирать образ на сервере из кода (запасной), false — скачивать из реестра
 maxapoc_proxy_image: maxapoc-proxy:local   # только начальное значение release.env; дальше версией владеет деплой
 maxapoc_proxy_registry: ghcr.io
 maxapoc_proxy_registry_user: Cl0wnF1esta

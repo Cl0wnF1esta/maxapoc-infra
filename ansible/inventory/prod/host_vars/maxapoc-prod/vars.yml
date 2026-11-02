@@ -38,7 +38,6 @@ security_ufw_allowed_ports:
   # basic
 maxapoc_proxy_metrics_bind: 10.66.66.1   # Prometheus hobot-metrics забирает метрики по WireGuard
   # Deploy rules
-maxapoc_proxy_build_on_server: false
 maxapoc_proxy_image: ghcr.io/cl0wnf1esta/maxapoc-proxy@sha256:70686894ff35f6fee81e2ff45c01609f6dea05786fefedaef4bebdb56a025ce3
 maxapoc_proxy_registry_token: "{{ vault_maxapoc_proxy_registry_token }}"
   # Certificates

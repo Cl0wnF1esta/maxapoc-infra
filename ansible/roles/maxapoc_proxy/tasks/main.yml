@@ -27,19 +27,13 @@
     group: root
     mode: '0644'
 
-# 3b. Доставить исходники — только для сборки на сервере
-- name: Deliver source code for build on server
-  ansible.builtin.include_tasks: build_on_server.yml
-  when: maxapoc_proxy_build_on_server | bool
-
-# 3c. Вход в реестр — только когда образ скачивается
+# 3b. Вход в реестр — только когда образ скачивается
 - name: Log in to image registry
   community.docker.docker_login:
     registry_url: "{{ maxapoc_proxy_registry }}"
     username: "{{ maxapoc_proxy_registry_user }}"
     password: "{{ maxapoc_proxy_registry_token }}"
   no_log: true
-  when: not (maxapoc_proxy_build_on_server | bool)
       
 # 4. Создать .env с контентом
 - name: make .env from secrets
@@ -92,8 +86,8 @@
     project_src: "{{ maxapoc_proxy_dest }}/vps"  # Путь к каталогу с docker-compose.yml
     env_files: [.env, release.env]
     state: present  # Аналог "up -d"
-    build: "{{ ('always' if code_delivery.changed else 'policy') if maxapoc_proxy_build_on_server | bool else 'never' }}"
-    pull: "{{ 'policy' if maxapoc_proxy_build_on_server | bool else 'missing' }}"
+    build: never  # образ собирается только в CI
+    pull: missing  # ссылка по digest неизменна - скачать, только если образа ещё нет
     wait: true  # Ждет статуса healthy
   register: result_build_dockerfile_and_run_compose
   until: result_build_dockerfile_and_run_compose is succeeded
