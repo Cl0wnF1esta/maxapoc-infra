@@ -128,7 +128,11 @@
   retries: 2
   delay: 3
 
-# 12. Проверка здоровья контейнеров
+# 12. Отработка хэндлеров перезапуска сервисов и проверка здоровья контейнеров
+  # Применить отложенные перезапуски ДО проверки здоровья(проверка итогового состояния)
+- name: Apply pending restarts before health check
+  ansible.builtin.meta: flush_handlers
+  # Проверка здоровья контейнеров
 - name: Wait until services is healthy
   ansible.builtin.uri:
     url: "{{ item.url }}"
