@@ -6,7 +6,7 @@ set -euo pipefail
 
 PROJECT_DIR=/opt/maxapoc/proxy/vps
 IMAGE_REPO=ghcr.io/cl0wnf1esta/maxapoc-proxy   # имя образа задано здесь; клиент присылает только digest
-WAIT_TIMEOUT=150                                # секунд на healthy (проверка здоровья раз в 60 с)
+WAIT_TIMEOUT=60                                # секунд на healthy: start_period 30 с + запас; дольше — версия сломана
 export DOCKER_CONFIG=/root/.docker              # вход в GHCR, независимо от HOME
 
 log() { logger -t maxapoc-deploy-run "$*"; echo "$*"; }
@@ -40,6 +40,11 @@ case "${1:-}" in
     # 4. Переключить и дождаться healthy
     if compose up -d --no-build --wait --wait-timeout "$WAIT_TIMEOUT"; then
       log "deploy ${digest}: OK"
+      # Хранить только текущий и предыдущий образ (откат без реестра); ошибка чистки не отменяет успех
+      keep_cur=$(cut -d= -f2- release.env)
+      keep_prev=$(cut -d= -f2- release.env.prev)
+      docker image ls --digests --format '{{.Repository}}@{{.Digest}}' "$IMAGE_REPO" | sort -u \
+        | grep -vxF -e "$keep_cur" -e "$keep_prev" | xargs -r docker image rm || true
       exit 0
     fi
 
