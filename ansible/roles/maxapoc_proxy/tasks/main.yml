@@ -70,7 +70,26 @@
     mode: '0640' # RW - root / R - группа владельца
   notify: Restart proxy if certs or gateways changed   # файл подключён в контейнер отдельным файлом - после замены нужен перезапуск
 
-# 7. Версия образа: создаётся один раз, дальше ею владеет деплой
+# 6a. Чистый сервер: версия из последней копии этого окружения; нет копии — ниже начальная версия из инвентаря
+- name: Restore release.env from backup if absent
+  ansible.builtin.command: >-
+    /usr/local/sbin/restic-env restore latest --target /
+    --include {{ maxapoc_proxy_dest }}/vps/release.env
+  args:
+    creates: "{{ maxapoc_proxy_dest }}/vps/release.env"   # файл уже есть — задача пропускается
+  when: backup_enabled | default(false) | bool
+  register: release_from_backup
+  failed_when: false
+
+# 6b. Явнов предупредить, если release.env не получет с бэкапа(нет бэкапов)
+- name: Warn if release.env was not restored from backup
+  ansible.builtin.debug:
+    msg: "release.env не получен из копии (rc={{ release_from_backup.rc }}) — используется начальная версия из инвентаря"
+  when:
+    - release_from_backup is changed
+    - release_from_backup.rc != 0
+
+# 6c. Версия образа: создаётся один раз, дальше ею владеет деплой
 - name: Create release.env if absent
   ansible.builtin.copy:
     dest: "{{ maxapoc_proxy_dest }}/vps/release.env"
@@ -80,7 +99,7 @@
     mode: '0644'
     force: false
 
-# 8. Сборка и запуск dockerfile
+# 7. Сборка и запуск dockerfile
 - name: Build and run Docker Compose
   community.docker.docker_compose_v2:
     project_src: "{{ maxapoc_proxy_dest }}/vps"  # Путь к каталогу с docker-compose.yml
