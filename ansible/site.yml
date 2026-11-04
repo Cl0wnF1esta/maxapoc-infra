@@ -22,3 +22,5 @@
       when: maxapoc_deploy_access_enabled | bool
     - role: maxapoc_monitoring
       when: maxapoc_monitoring_enabled | bool
+    - role: backup
+      when: backup_enabled | bool

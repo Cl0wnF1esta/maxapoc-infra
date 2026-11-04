@@ -1,0 +1,17 @@
+#!/bin/bash
+# Резервное копирование: согласованные снимки SQLite → restic backup → политика хранения
+set -euo pipefail
+STAGING={{ backup_staging_dir }}
+
+install -d -m 0700 "$STAGING"
+rm -f "$STAGING"/*
+
+# Снимки баз SQLite онлайн-механизмом SQLite (сервис не останавливается, копия согласованная)
+{% for db in backup_sqlite_dbs %}
+sqlite3 "{{ db.src }}" ".backup '$STAGING/{{ db.name }}'"
+{% endfor %}
+
+/usr/local/sbin/restic-env backup --tag auto "$STAGING"{% for p in backup_paths %} "{{ p }}"{% endfor %}
+
+/usr/local/sbin/restic-env forget --tag auto {{ backup_keep }} --prune
+logger -t backup-run "backup OK"

@@ -1,0 +1,5 @@
+#!/bin/bash
+# restic с настройками репозитория этого сервера: restic-env <команда restic>
+set -euo pipefail
+set -a; . /etc/restic/env; set +a
+exec restic "$@"

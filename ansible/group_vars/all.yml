@@ -10,3 +10,8 @@ proxy_env: {}
 #monitoring_stack
 maxapoc_network_name: maxapoc_net
 maxapoc_monitoring_stack_src: "{{ maxapoc_repo_clone }}/observability"
+
+# backup: одно хранилище S3, у каждого окружения свой репозиторий restic (префикс)
+backup_s3_endpoint: S3_ENDPOINT
+backup_s3_bucket: BACKUP_BUCKET
+backup_s3_region: ru-1

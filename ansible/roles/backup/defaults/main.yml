@@ -1,0 +1,7 @@
+---
+backup_enabled: false
+backup_repo_name: ""                    # префикс в бакете: lab / prod
+backup_staging_dir: /var/backups/restic-staging
+backup_sqlite_dbs: []                   # [{ src: /путь/к/базе.db, name: имя-снимка.db }]
+backup_paths: []                        # файлы и каталоги как есть
+backup_keep: "--keep-daily 7 --keep-weekly 4 --keep-monthly 6"

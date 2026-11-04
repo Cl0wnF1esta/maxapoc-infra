@@ -1,0 +1,57 @@
+---
+# 1. Установить restic и sqlite3
+- name: Install restic and sqlite3
+  ansible.builtin.apt:
+    name: [restic, sqlite3]
+    state: present
+
+# 2. Создать окружение
+- name: Config directory
+  ansible.builtin.file:
+    path: /etc/restic
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+
+# 3. Разместить конфиг репозитория и ключи s3
+- name: Repository settings and S3 keys
+  ansible.builtin.template:
+    src: env.j2
+    dest: /etc/restic/env
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true
+
+# 4. Разместить restic pass
+- name: Repository password
+  ansible.builtin.copy:
+    content: "{{ backup_restic_password }}\n"
+    dest: /etc/restic/password
+    owner: root
+    group: root
+    mode: '0400'                       # только чтение и только root
+  no_log: true
+
+# 5. Разместить скрипты restic
+- name: Scripts restic-env and backup-run
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/usr/local/sbin/{{ item }}"
+    owner: root
+    group: root
+    mode: '0700'
+  loop: [restic-env, backup-run]
+
+# 6. Проверить, что репозиторий создаётся один раз(если он уже есть, restic init не выполняется)
+- name: Check repository exists
+  ansible.builtin.command: /usr/local/sbin/restic-env cat config
+  register: backup_repo_check
+  changed_when: false
+  failed_when: false
+
+# 6. Инит репозитория restic
+- name: Initialize repository
+  ansible.builtin.command: /usr/local/sbin/restic-env init
+  when: backup_repo_check.rc != 0

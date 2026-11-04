@@ -54,3 +54,13 @@ maxapoc_monitoring_telegram_chat_id: "{{ vault_maxapoc_monitoring_telegram_chat_
   # Grafana
 maxapoc_monitoring_grafana_admin_password: "{{ vault_maxapoc_monitoring_grafana_admin_password }}"
 
+# backup
+backup_enabled: true
+backup_repo_name: lab
+backup_s3_access_key: "{{ vault_backup_s3_access_key }}"
+backup_s3_secret_key: "{{ vault_backup_s3_secret_key }}"
+backup_restic_password: "{{ vault_backup_restic_password }}"
+backup_sqlite_dbs:
+  - { src: /var/lib/docker/volumes/monitoring_grafana_data/_data/grafana.db, name: grafana.db }
+backup_paths:
+  - /opt/maxapoc/proxy/vps/release.env
