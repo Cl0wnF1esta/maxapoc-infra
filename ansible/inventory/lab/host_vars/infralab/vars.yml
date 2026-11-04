@@ -40,7 +40,7 @@ maxapoc_proxy_gh_hub_token: "{{ vault_maxapoc_proxy_gh_hub_token }}"
 maxapoc_proxy_llm_odirouter_key: "{{ vault_maxapoc_proxy_llm_odirouter_key }}"
 maxapoc_proxy_llm_routeway_key: "{{ vault_maxapoc_proxy_llm_routeway_key }}"
   # Deploy rules
-maxapoc_proxy_image: ghcr.io/cl0wnf1esta/maxapoc-proxy@sha256:aae36e3a78bbc2dc4ee394472817b65bf9b5ddc33a7e5c3cacbd3b9d2d5f7ee7
+maxapoc_proxy_image: ghcr.io/cl0wnf1esta/maxapoc-proxy@sha256:f16b4f2a0fd2483f375e70c2cba7dd0b326b84ce339a941a35a4bfa01e68c43a
 maxapoc_proxy_registry_token: "{{ vault_maxapoc_proxy_registry_token }}"
 
 # Deploy access (CI)

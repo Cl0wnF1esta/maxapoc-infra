@@ -38,7 +38,7 @@ security_ufw_allowed_ports:
   # basic
 maxapoc_proxy_metrics_bind: 10.66.66.1   # Prometheus hobot-metrics забирает метрики по WireGuard
   # Deploy rules
-maxapoc_proxy_image: ghcr.io/cl0wnf1esta/maxapoc-proxy@sha256:70686894ff35f6fee81e2ff45c01609f6dea05786fefedaef4bebdb56a025ce3
+maxapoc_proxy_image: ghcr.io/cl0wnf1esta/maxapoc-proxy@sha256:f16b4f2a0fd2483f375e70c2cba7dd0b326b84ce339a941a35a4bfa01e68c43a
 maxapoc_proxy_registry_token: "{{ vault_maxapoc_proxy_registry_token }}"
   # Certificates
 maxapoc_proxy_server_crt: "{{ vault_maxapoc_proxy_server_crt }}"
@@ -65,3 +65,27 @@ maxapoc_monitoring_telegram_chat_id: "{{ vault_maxapoc_monitoring_telegram_chat_
   # Grafana
 maxapoc_monitoring_grafana_admin_password: "{{ vault_maxapoc_monitoring_grafana_admin_password }}"
 
+# backup
+  # basic
+backup_enabled: true
+backup_paths:
+  - /etc/wireguard
+  - /root/cert
+  - /root/.acme.sh
+  - /root/hobot-metrics
+  - /opt/maxapoc/proxy/vps/release.env
+  - /var/lib/docker/volumes/hobot-metrics_alertmanager-data/_data
+  - /var/lib/docker/volumes/hobot-metrics_prometheus-data/_data
+  # restic
+backup_repo_name: prod
+backup_restic_password: "{{ vault_backup_restic_password }}"
+  # hosters-s3
+backup_s3_access_key: "{{ vault_backup_s3_access_key }}"
+backup_s3_secret_key: "{{ vault_backup_s3_secret_key }}"
+  # SQLite
+backup_sqlite_dbs:
+  - { src: /etc/x-ui/x-ui.db, name: x-ui.db }
+  - { src: /var/lib/docker/volumes/hobot-metrics_grafana-data/_data/grafana.db, name: hobot-grafana.db }
+  # alerting
+backup_alert_telegram_token: "{{ maxapoc_monitoring_telegram_token }}"
+backup_alert_telegram_chat_id: "{{ maxapoc_monitoring_telegram_chat_id }}"
