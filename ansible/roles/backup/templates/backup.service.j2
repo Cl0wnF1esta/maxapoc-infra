@@ -1,0 +1,9 @@
+[Unit]
+Description=Restic backup
+OnFailure=backup-alert.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/backup-run
+Nice=10
+IOSchedulingClass=idle

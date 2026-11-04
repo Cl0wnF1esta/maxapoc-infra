@@ -14,4 +14,10 @@ sqlite3 "{{ db.src }}" ".backup '$STAGING/{{ db.name }}'"
 /usr/local/sbin/restic-env backup --tag auto "$STAGING"{% for p in backup_paths %} "{{ p }}"{% endfor %}
 
 /usr/local/sbin/restic-env forget --tag auto {{ backup_keep }} --prune
+
+# Раз в неделю — проверка целостности репозитория (без чтения всех данных)
+if [ "$(date +%u)" = "{{ backup_check_weekday }}" ]; then
+  /usr/local/sbin/restic-env check
+fi
+
 logger -t backup-run "backup OK"

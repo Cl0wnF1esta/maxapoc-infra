@@ -1,0 +1,12 @@
+#!/bin/bash
+# Оповещение о сбое резервного копирования (запускается systemd через OnFailure=)
+set -euo pipefail
+set -a; . /etc/restic/alert.env; set +a
+
+proxy_args=()
+if [ -n "${ALERT_PROXY:-}" ]; then proxy_args=(--proxy "$ALERT_PROXY"); fi
+
+text="Резервная копия на $(hostname) НЕ выполнена. Подробности: journalctl -u backup.service -n 50"
+curl -fsS --max-time 20 "${proxy_args[@]}" \
+  --data-urlencode "chat_id=${TG_CHAT}" --data-urlencode "text=${text}" \
+  "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" > /dev/null

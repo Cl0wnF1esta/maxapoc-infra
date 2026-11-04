@@ -5,3 +5,8 @@ backup_staging_dir: /var/backups/restic-staging
 backup_sqlite_dbs: []                   # [{ src: /путь/к/базе.db, name: имя-снимка.db }]
 backup_paths: []                        # файлы и каталоги как есть
 backup_keep: "--keep-daily 7 --keep-weekly 4 --keep-monthly 6"
+backup_oncalendar: "*-*-* 03:30:00"     # ежедневно, плюс случайная задержка до 30 мин
+backup_check_weekday: 7                 # restic check по воскресеньям (date +%u)
+backup_alert_telegram_token: ""
+backup_alert_telegram_chat_id: ""
+backup_alert_proxy: ""                  # прокси для api.telegram.org, если прямого доступа нет

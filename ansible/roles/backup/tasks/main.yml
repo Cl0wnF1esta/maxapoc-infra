@@ -42,7 +42,7 @@
     owner: root
     group: root
     mode: '0700'
-  loop: [restic-env, backup-run]
+  loop: [restic-env, backup-run, backup-alert]
 
 # 6. Проверить, что репозиторий создаётся один раз(если он уже есть, restic init не выполняется)
 - name: Check repository exists
@@ -51,7 +51,39 @@
   changed_when: false
   failed_when: false
 
-# 6. Инит репозитория restic
+# 7. Инит репозитория restic
 - name: Initialize repository
   ansible.builtin.command: /usr/local/sbin/restic-env init
   when: backup_repo_check.rc != 0
+  
+# 8. Разместить конфиг restic для алертов
+- name: Telegram settings for failure alert
+  ansible.builtin.template:
+    src: alert.env.j2
+    dest: /etc/restic/alert.env
+    owner: root
+    group: root
+    mode: '0600'
+  no_log: true
+
+# 10. Разместить новые юниты systemd
+- name: systemd units (service, alert, timer)
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop: [backup.service, backup-alert.service, backup.timer]
+  notify: Reload systemd
+
+# 10a. Запустить хэндлер для релоада systemd(должен перечитать новые юниты до включения таймера)
+- name: Apply pending systemd reload
+  ansible.builtin.meta: flush_handlers
+
+# 11. Включить таймер бэкапов в systemd
+- name: Enable daily backup timer
+  ansible.builtin.systemd_service:
+    name: backup.timer
+    enabled: true
+    state: started
