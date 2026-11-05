@@ -2,7 +2,7 @@
 maxapoc-prod ansible_host=PROD_ADDRESS
 
 # Группа групп (родительская группа)
-[infra:children]
+[maxapoc_servers:children]
 prod
 
 [all:vars]

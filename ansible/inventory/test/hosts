@@ -1,9 +1,9 @@
-[lab]
-infralab ansible_host=192.168.56.10
+[test]
+maxapoc-test ansible_host=192.168.56.10
 
 # Группа групп (родительская группа)
-[infra:children]
-lab
+[maxapoc_servers:children]
+test
 
 [all:vars]
 ansible_python_interpreter=/usr/bin/python3

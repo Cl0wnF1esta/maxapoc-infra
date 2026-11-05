@@ -1,6 +1,6 @@
 ---
 - name: Bring VM to base state
-  hosts: infra
+  hosts: maxapoc_servers
   become: true
   environment: "{{ proxy_env }}"
   pre_tasks:

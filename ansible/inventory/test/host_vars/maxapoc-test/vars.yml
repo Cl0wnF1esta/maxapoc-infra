@@ -60,7 +60,7 @@ backup_enabled: true
 backup_paths:
   - /opt/maxapoc/proxy/vps/release.env
   # restic
-backup_repo_name: lab
+backup_repo_name: test
 backup_restic_password: "{{ vault_backup_restic_password }}"
   # hoster-s3
 backup_s3_access_key: "{{ vault_backup_s3_access_key }}"
