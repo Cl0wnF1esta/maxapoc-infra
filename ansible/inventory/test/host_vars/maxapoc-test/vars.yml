@@ -1,7 +1,7 @@
 # auth
-ansible_user: user1
+ansible_user: "{{ vault_ansible_user }}"
 ansible_port: 22
-ansible_ssh_private_key_file: SSH_PRIVATE_KEY_FILE
+ansible_ssh_private_key_file: "{{ vault_ansible_ssh_private_key_file }}"
 
 # proxy for lab
 proxy_env:
@@ -21,7 +21,7 @@ security_ufw_allowed_ports:
   - name: Zabbix(test)
     proto: tcp
     port: 10050
-    src: 192.168.56.2        # на проде в TimeWeb 3 записи Server=HOSTER_ZABBIX_1,HOSTER_ZABBIX_2,HOSTER_ZABBIX_3
+    src: 192.168.56.2
   - name: Maxapoc-proxy
     proto: tcp
     port: 8443
@@ -72,3 +72,8 @@ backup_sqlite_dbs:
 backup_alert_telegram_token: "{{ maxapoc_monitoring_telegram_token }}"
 backup_alert_telegram_chat_id: "{{ maxapoc_monitoring_telegram_chat_id }}"
 backup_alert_proxy: http://192.168.56.2:10809
+
+# Application repo's
+maxapoc_repo_url: "{{ vault_maxapoc_repo_url }}"
+maxapoc_proxy_gh_app_repo: "{{ vault_maxapoc_proxy_gh_app_repo }}"
+maxapoc_proxy_gh_hub_repo: "{{ vault_maxapoc_proxy_gh_hub_repo }}"

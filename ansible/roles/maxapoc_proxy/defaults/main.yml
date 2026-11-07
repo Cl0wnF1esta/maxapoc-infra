@@ -1,9 +1,9 @@
 ---
 maxapoc_proxy_dest: /opt/maxapoc/proxy
-maxapoc_proxy_gh_app_repo: OWNER/APP_REPO
+maxapoc_proxy_gh_app_repo: ""    # владелец/имя репозитория приложения — в инвентаре (vault)
 maxapoc_proxy_uid: 1000
 maxapoc_proxy_gid: 1000
-maxapoc_proxy_gh_hub_repo: OWNER/HUB_REPO
+maxapoc_proxy_gh_hub_repo: ""    # владелец/имя репозитория хаба — в инвентаре (vault)
 maxapoc_proxy_metrics_port: 9101
 maxapoc_proxy_metrics_bind: 127.0.0.1  #IP
 maxapoc_proxy_image: maxapoc-proxy:local   # только начальное значение release.env; дальше версией владеет деплой

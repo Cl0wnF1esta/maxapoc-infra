@@ -1,4 +1,13 @@
 ---
+# 0. Проверить, что значения репозиториев заданы
+- name: Required repository settings are set
+  ansible.builtin.assert:
+    that:
+      - maxapoc_proxy_gh_app_repo | length > 0
+      - maxapoc_proxy_gh_hub_repo | length > 0
+    fail_msg: "maxapoc_proxy_gh_app_repo / maxapoc_proxy_gh_hub_repo не заданы в инвентаре (vault)"
+    quiet: true
+
 # 1. Создать рабочее пространство для разворачивания прокси на сервере
 - name: Create workspace for proxy
   ansible.builtin.file:

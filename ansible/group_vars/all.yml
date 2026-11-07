@@ -1,6 +1,6 @@
-# Источник файлов для серверов: отдельный чистый клон APP_REPO на ветке main (не рабочая копия)
-maxapoc_repo_url: git@github.com:OWNER/APP_REPO.git
-maxapoc_repo_clone: /home/PROD_USER/.cache/infra-lab/APP_REPO
+# Источник файлов для серверов: отдельный чистый клон репозитория приложения на ветке main (не рабочая копия).
+# Адрес репозитория — maxapoc_repo_url в инвентаре (значение в vault).
+maxapoc_repo_clone: "{{ lookup('env', 'HOME') }}/.cache/maxapoc/app"
 maxapoc_repo_version: main
 
 #proxy
@@ -12,6 +12,6 @@ maxapoc_network_name: maxapoc_net
 maxapoc_monitoring_stack_src: "{{ maxapoc_repo_clone }}/observability"
 
 # backup: одно хранилище S3, у каждого окружения свой репозиторий restic (префикс)
-backup_s3_endpoint: S3_ENDPOINT
-backup_s3_bucket: BACKUP_BUCKET
+backup_s3_endpoint: "{{ vault_backup_s3_endpoint }}"
+backup_s3_bucket: "{{ vault_backup_s3_bucket }}"
 backup_s3_region: ru-1

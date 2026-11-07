@@ -1,5 +1,5 @@
 [prod]
-maxapoc-prod ansible_host=PROD_ADDRESS
+maxapoc-prod
 
 # Группа групп (родительская группа)
 [maxapoc_servers:children]
