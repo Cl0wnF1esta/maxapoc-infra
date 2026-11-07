@@ -1,8 +1,31 @@
 # maxapoc-infra
 
+**Русский** | [English](README.en.md)
+
 Ansible-код, который одной командой приводит сервер Ubuntu 24.04 к рабочему состоянию проекта MaxApoc: базовая настройка и защита, Docker, прокси приложения, доступ для деплоя из CI, стек мониторинга (Prometheus, Alertmanager → Telegram, Grafana) и шифрованные резервные копии. Повторный запуск ничего не меняет (`changed=0`).
 
 Новые версии прокси выкатывает CI репозитория MaxApoc (слияние в `main` → тесты → образ → деплой по digest с проверкой здоровья и автооткатом). Ansible готовит сервер; версией владеет деплой.
+
+```mermaid
+flowchart TB
+  subgraph GH["GitHub: репозиторий приложения"]
+    dev["dev: проверки"] -->|слияние| main["main"]
+    main --> test["test"] --> image["image → GHCR<br/>digest sha256:…"] --> deploy["deploy<br/>окружение production"]
+  end
+  subgraph CN["Управляющая машина"]
+    clone["чистый клон main"] --> play["ansible-playbook"]
+  end
+  subgraph SRV["Сервер"]
+    gate["deploy-gate: фильтр"] --> run["deploy-run:<br/>pull → release.env → up --wait"]
+    run -->|healthy| ok["OK"]
+    run -->|"не healthy за 60 с"| rb["откат на release.env.prev"]
+    cfg[".env, compose,<br/>сертификаты, gateways.json"]
+  end
+  main -.-> clone
+  deploy -->|"SSH, ключ с ограничениями:<br/>deploy sha256:…"| gate
+  image -.->|"скачивание по digest"| run
+  play -->|"SSH + sudo"| cfg
+```
 
 **Проверено**
 - чистая виртуальная машина (ВМ) → рабочий сервер одной командой за ~6,5 минуты, повторный запуск `changed=0`;
@@ -29,19 +52,16 @@ Ansible-код, который одной командой приводит се
 | `maxapoc_deploy_access` | пользователь деплоя с ограниченным ключом (`maxapoc_deploy_access_enabled`) |
 | `maxapoc_monitoring` | Prometheus, Alertmanager, Grafana с проверкой здоровья (`maxapoc_monitoring_enabled`) |
 
-```
-                         сеть Docker maxapoc_net
- ┌──────────────────────────────────────────────────────────────────────────┐
- │                                                                          │
- │  maxapoc-proxy ──:9101──▶ maxapoc-prometheus ──▶ maxapoc-alertmanager ───┼──▶ Telegram
- │       │                       ▲  :9090                  :9093            │
- │       │                       │                                          │
- │       │                maxapoc-grafana :3000                             │
- │       │                                                                  │
- └───────┼──────────────────────────────────────────────────────────────────┘
-         ▼
-   :8443 — наружу (единственный опубликованный порт)
- 9090, 9093, 3000 — на 127.0.0.1 сервера, доступ через SSH-туннель
+```mermaid
+flowchart LR
+  net(("Интернет")) -->|":8443 TLS"| proxy
+  subgraph D["Сеть Docker maxapoc_net"]
+    proxy["maxapoc-proxy"] -->|":9101 метрики"| prom["maxapoc-prometheus :9090"]
+    prom --> am["maxapoc-alertmanager :9093"]
+    graf["maxapoc-grafana :3000"] --> prom
+  end
+  am --> tg(("Telegram"))
+  ssh["SSH-туннель → 127.0.0.1"] -.-> prom & am & graf
 ```
 
 ### Окружения
