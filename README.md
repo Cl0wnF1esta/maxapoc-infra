@@ -59,7 +59,7 @@ Ansible-код, который одной командой приводит се
 ### 1. Управляющая машина
 
 - `ansible-core` 2.18 или новее;
-- SSH-доступ к репозиторию MaxApoc на GitHub (плейбук сам ведёт клон `~/.cache/infra-lab/APP_REPO`);
+- SSH-доступ к репозиторию MaxApoc на GitHub (плейбук сам ведёт клон `~/.cache/maxapoc/app`);
 - пароли Ansible Vault (шаг 3).
 
 ### 2. Целевой сервер
@@ -105,7 +105,7 @@ ansible/
 
 ```ini
 [test]
-maxapoc-test ansible_host=<адрес_сервера>
+maxapoc-test
 
 [maxapoc_servers:children]
 test
@@ -117,14 +117,13 @@ ansible_python_interpreter=/usr/bin/python3
 `group_vars/all.yml`:
 
 ```yaml
-maxapoc_repo_url: git@github.com:<владелец>/<репозиторий_MaxApoc>.git
-maxapoc_repo_clone: <домашний_каталог>/.cache/infra-lab/APP_REPO
+maxapoc_repo_clone: "{{ lookup('env', 'HOME') }}/.cache/maxapoc/app"
 maxapoc_repo_version: main
 maxapoc_proxy_src: "{{ maxapoc_repo_clone }}/proxy"
 maxapoc_monitoring_stack_src: "{{ maxapoc_repo_clone }}/observability"
 maxapoc_network_name: maxapoc_net
-backup_s3_endpoint: https://<адрес_S3>
-backup_s3_bucket: <бакет>
+backup_s3_endpoint: "{{ vault_backup_s3_endpoint }}"
+backup_s3_bucket: "{{ vault_backup_s3_bucket }}"
 backup_s3_region: <регион>
 proxy_env: {}
 ```
@@ -132,12 +131,14 @@ proxy_env: {}
 `host_vars/<хост>/vars.yml`:
 
 ```yaml
-ansible_user: <пользователь>
-ansible_ssh_private_key_file: <приватный_ключ>
+ansible_host: "{{ vault_ansible_host }}"
+ansible_user: "{{ vault_ansible_user }}"
+ansible_ssh_private_key_file: "{{ vault_ansible_ssh_private_key_file }}"
 common_swap_size_mb: 512
 
 security_ufw_allowed_ports:
   - { name: Maxapoc-proxy, proto: tcp, port: 8443 }
+  - { name: Zabbix-hoster-1, proto: tcp, port: 10050, src: "{{ vault_hoster_zabbix_addrs[0] }}" }
 
 # maxapoc_proxy_metrics_bind: <адрес>            # по умолчанию 127.0.0.1
 # maxapoc_monitoring_enabled: false
@@ -157,6 +158,11 @@ backup_paths:
   - /opt/maxapoc/proxy/vps/release.env
 backup_alert_telegram_token: "{{ maxapoc_monitoring_telegram_token }}"
 backup_alert_telegram_chat_id: "{{ maxapoc_monitoring_telegram_chat_id }}"
+
+# Репозитории приложения
+maxapoc_repo_url: "{{ vault_maxapoc_repo_url }}"
+maxapoc_proxy_gh_app_repo: "{{ vault_maxapoc_proxy_gh_app_repo }}"
+maxapoc_proxy_gh_hub_repo: "{{ vault_maxapoc_proxy_gh_hub_repo }}"
 
 # Ссылки на секреты из vault.yml
 maxapoc_proxy_gh_app_token: "{{ vault_maxapoc_proxy_gh_app_token }}"
@@ -182,6 +188,11 @@ ansible-vault create --encrypt-vault-id test inventory/test/host_vars/maxapoc-te
 
 | Переменная | Что это |
 |---|---|
+| `vault_ansible_host`, `vault_ansible_user`, `vault_ansible_ssh_private_key_file` | адрес сервера, пользователь и ключ SSH |
+| `vault_hoster_zabbix_addrs` | адреса агента Zabbix хостера (список), если он есть |
+| `vault_maxapoc_repo_url` | адрес репозитория приложения для клона (`git@github.com:…`) |
+| `vault_maxapoc_proxy_gh_app_repo`, `vault_maxapoc_proxy_gh_hub_repo` | `владелец/имя` репозиториев приложения и хаба |
+| `vault_backup_s3_endpoint`, `vault_backup_s3_bucket` | адрес хранилища S3 и бакет копий |
 | `vault_maxapoc_proxy_gh_app_token` | токен GitHub для репозитория приложения |
 | `vault_maxapoc_proxy_gh_hub_token` | токен GitHub для репозитория хаба |
 | `vault_maxapoc_proxy_app_key` | ключ приложения, от 16 символов (`openssl rand -hex 24`) |

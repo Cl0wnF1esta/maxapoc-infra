@@ -8,8 +8,8 @@
 - **Тестовая среда:** `ansible-playbook site.yml` (инвентарь по умолчанию).
 - **Рабочий сервер:** только `ansible-playbook -i inventory/prod site.yml`, сначала с `--check --diff`.
 - Окружения запускаются **по отдельности**: пароль sudo спрашивается один раз на запуск.
-- Файлы MaxApoc (compose, `gateways.json`, наблюдаемость) Ansible берёт **из чистого клона `main`** (`~/.cache/infra-lab/APP_REPO`), который сам обновляет первой задачей; рабочая копия не участвует ([ADR-019](DECISIONS.md#adr-019)). Ручные правки в клоне останавливают запуск: `git -C ~/.cache/infra-lab/APP_REPO checkout -- .`.
-- Рабочий сервер должен получить **ровно то, что проверено в тестовой среде**: после запуска тестовой среды запомнить `git -C ~/.cache/infra-lab/APP_REPO rev-parse HEAD` и запускать рабочий сервер с `-e maxapoc_repo_version=<хеш>`.
+- Файлы MaxApoc (compose, `gateways.json`, наблюдаемость) Ansible берёт **из чистого клона `main`** (`~/.cache/maxapoc/app`), который сам обновляет первой задачей; рабочая копия не участвует ([ADR-019](DECISIONS.md#adr-019)). Ручные правки в клоне останавливают запуск: `git -C ~/.cache/maxapoc/app checkout -- .`.
+- Рабочий сервер должен получить **ровно то, что проверено в тестовой среде**: после запуска тестовой среды запомнить `git -C ~/.cache/maxapoc/app rev-parse HEAD` и запускать рабочий сервер с `-e maxapoc_repo_version=<хеш>`.
 - **Версию прокси Ansible не меняет:** её выкатывает деплой из CI (раздел 5).
 - Каждый неожиданный `changed` разбирается **до** рабочего сервера.
 
@@ -307,7 +307,7 @@ sudo docker kill -s HUP maxapoc-prometheus
 | `curl … Expecting value` / `Failed to connect` к 9090, 9093, 3000 | не открыт SSH-туннель или он не пробрасывает этот порт → `ss -tlnp | grep ssh`; либо проверить прямо на сервере по `127.0.0.1` |
 | нет сообщений в Telegram | `docker logs maxapoc-alertmanager --tail 30`: `timeout` — нет сети до Telegram, `401` — токен, `400 chat not found` — номер чата |
 | `MAXAPOC_PROXY_IMAGE is not set` | compose запущен без файлов переменных → `--env-file .env --env-file release.env` |
-| `Local modifications exist` на первой задаче | в клоне `~/.cache/infra-lab/APP_REPO` что-то правили руками → `git -C ~/.cache/infra-lab/APP_REPO checkout -- .` |
+| `Local modifications exist` на первой задаче | в клоне `~/.cache/maxapoc/app` что-то правили руками → `git -C ~/.cache/maxapoc/app checkout -- .` |
 | `deploy-check` / `deploy` «not allowed to deploy to production» | запуск не с `main` — правило окружения `production` |
 | деплой: код 2, 4, 5, 255 | раздел 5, таблица результатов |
 | ключ «чужого» окружения вдруг пускает на сервер | тест без `IdentitiesOnly=yes`: агент предложил другой ключ; проверить с `-v` (`Server accepts key`) |
