@@ -7,23 +7,22 @@ Ansible code that brings an Ubuntu 24.04 server to the working state of the MaxA
 New proxy versions are rolled out by the CI of the MaxApoc repository (merge to `main` → tests → image → deploy by digest with a health check and automatic rollback). Ansible prepares the server; the deploy owns the version.
 
 ```mermaid
-flowchart TB
+flowchart LR
   subgraph GH["GitHub: application repository"]
-    dev["dev: checks"] -->|merge| main["main"]
-    main --> test["test"] --> image["image → GHCR<br/>digest sha256:…"] --> deploy["deploy<br/>environment production"]
+    dev["dev: checks"] -->|merge| main["main"] --> ci["test → image<br/>GHCR, digest"] --> deploy["deploy<br/>env production"]
   end
   subgraph CN["Control node"]
-    clone["clean clone of main"] --> play["ansible-playbook"]
+    clone["clean clone<br/>of main"] --> play["ansible-playbook"]
   end
   subgraph SRV["Server"]
-    gate["deploy-gate: filter"] --> run["deploy-run:<br/>pull → release.env → up --wait"]
+    gate["deploy-gate:<br/>filter"] --> run["deploy-run:<br/>pull → release.env<br/>→ up --wait"]
     run -->|healthy| ok["OK"]
-    run -->|"not healthy in 60 s"| rb["rollback to release.env.prev"]
-    cfg[".env, compose,<br/>certificates, gateways.json"]
+    run -->|"not healthy<br/>in 60 s"| rb["rollback to<br/>release.env.prev"]
+    cfg[".env, compose,<br/>certificates,<br/>gateways.json"]
   end
   main -.-> clone
-  deploy -->|"SSH, restricted key:<br/>deploy sha256:…"| gate
-  image -.->|"pull by digest"| run
+  deploy -->|"SSH, restricted key"| gate
+  ci -.->|"pull by digest"| run
   play -->|"SSH + sudo"| cfg
 ```
 
@@ -36,7 +35,7 @@ flowchart TB
 
 - [DECISIONS](docs/en/DECISIONS.md) — decisions and their reasons
 - [OPERATIONS](docs/en/OPERATIONS.md) — maintenance, deploy, backups, restore, incidents
-- [SECURITY](docs/en/SECURITY.md) — threat model, accepted risks, limitations
+- [THREAT_MODEL](docs/en/THREAT_MODEL.md) — threat model, accepted risks, limitations
 
 ## What the playbook does
 
@@ -319,4 +318,4 @@ GitHub → Settings → Environments → `production`: `main` branch only; envir
 - Backups run once a day: an incident can lose up to a day of data.
 - A new server address requires a new proxy certificate and a new application release: [OPERATIONS](docs/en/OPERATIONS.md), section 9.
 - A change that needs both a new variable and new code is released in two steps: [DECISIONS](docs/en/DECISIONS.md#adr-007).
-- Other accepted risks — [SECURITY](docs/en/SECURITY.md).
+- Other accepted risks — [THREAT_MODEL](docs/en/THREAT_MODEL.md).

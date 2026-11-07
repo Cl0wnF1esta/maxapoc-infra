@@ -7,23 +7,22 @@ Ansible-код, который одной командой приводит се
 Новые версии прокси выкатывает CI репозитория MaxApoc (слияние в `main` → тесты → образ → деплой по digest с проверкой здоровья и автооткатом). Ansible готовит сервер; версией владеет деплой.
 
 ```mermaid
-flowchart TB
+flowchart LR
   subgraph GH["GitHub: репозиторий приложения"]
-    dev["dev: проверки"] -->|слияние| main["main"]
-    main --> test["test"] --> image["image → GHCR<br/>digest sha256:…"] --> deploy["deploy<br/>окружение production"]
+    dev["dev: проверки"] -->|слияние| main["main"] --> ci["test → image<br/>GHCR, digest"] --> deploy["deploy<br/>окружение production"]
   end
   subgraph CN["Управляющая машина"]
-    clone["чистый клон main"] --> play["ansible-playbook"]
+    clone["чистый клон<br/>main"] --> play["ansible-playbook"]
   end
   subgraph SRV["Сервер"]
-    gate["deploy-gate: фильтр"] --> run["deploy-run:<br/>pull → release.env → up --wait"]
+    gate["deploy-gate:<br/>фильтр"] --> run["deploy-run:<br/>pull → release.env<br/>→ up --wait"]
     run -->|healthy| ok["OK"]
-    run -->|"не healthy за 60 с"| rb["откат на release.env.prev"]
-    cfg[".env, compose,<br/>сертификаты, gateways.json"]
+    run -->|"не healthy<br/>за 60 с"| rb["откат на<br/>release.env.prev"]
+    cfg[".env, compose,<br/>сертификаты,<br/>gateways.json"]
   end
   main -.-> clone
-  deploy -->|"SSH, ключ с ограничениями:<br/>deploy sha256:…"| gate
-  image -.->|"скачивание по digest"| run
+  deploy -->|"SSH, ключ с ограничениями"| gate
+  ci -.->|"скачивание по digest"| run
   play -->|"SSH + sudo"| cfg
 ```
 
@@ -36,7 +35,7 @@ flowchart TB
 
 - [DECISIONS](docs/DECISIONS.md) — решения и их причины
 - [OPERATIONS](docs/OPERATIONS.md) — обслуживание, деплой, резервные копии, восстановление, аварии
-- [SECURITY](docs/SECURITY.md) — модель угроз, принятые риски, ограничения
+- [THREAT_MODEL](docs/THREAT_MODEL.md) — модель угроз, принятые риски, ограничения
 
 ## Что делает плейбук
 
@@ -319,4 +318,4 @@ GitHub → Settings → Environments → `production`: только ветка `
 - Резервная копия — раз в сутки: при аварии теряется до суток данных.
 - Новый адрес сервера требует нового сертификата прокси и выпуска приложения: [OPERATIONS](docs/OPERATIONS.md), раздел 9.
 - Изменение, которому нужны и новая переменная, и новый код, выпускается в два шага: [DECISIONS](docs/DECISIONS.md#adr-007).
-- Остальные принятые риски — [SECURITY](docs/SECURITY.md).
+- Остальные принятые риски — [THREAT_MODEL](docs/THREAT_MODEL.md).

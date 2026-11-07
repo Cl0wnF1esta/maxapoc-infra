@@ -1,6 +1,6 @@
 # Security
 
-[Русский](../SECURITY.md) | **English**
+[Русский](/docs/THREAT_MODEL.md) | **English**
 
 What is protected, how, and what is deliberately left open. The document contains only what has been verified; plans are marked.
 
@@ -22,7 +22,7 @@ One public VPS (1 GB RAM) running the MaxApoc application proxy: the proxy holds
 
 ## Deploy from CI
 
-Goal: a leak of what CI uses does not give access to the server ([ADR-016](DECISIONS.md#adr-016)).
+Goal: a leak of what CI uses does not give access to the server ([ADR-016](/docs/en/DECISIONS.md#adr-016)).
 
 - **A separate user `maxapoc-deploy`:**
   - password locked;
@@ -140,8 +140,8 @@ Goal: a leak of what CI uses does not give access to the server ([ADR-016](DECIS
 | The CA was not reissued after `ca.key` had been stored on the server | no signs of compromise; reissuing means rebuilding the application for every user | the key was moved off the server, hosting provider backups taken before that were deleted |
 | The proxy reads secrets from `.env`, not from files | requires an application change | `.env` — `root`, `0600`; no extra users on the server |
 | The ufw role only adds rules | how the role works | removal is a manual step in the change plan |
-| MaxApoc observability on the production server depends on the `hobot-metrics` stack | not enough memory for a second stack | see [ADR-006](DECISIONS.md#adr-006); the copy of alert rules is synced manually |
-| Whoever can push to `main` controls production | this is how auto-deploy works; branch protection for a private repository requires a paid plan | account 2FA, a single collaborator with write access; the CI key limits the damage ([ADR-016](DECISIONS.md#adr-016)) |
+| MaxApoc observability on the production server depends on the `hobot-metrics` stack | not enough memory for a second stack | see [ADR-006](/docs/en/DECISIONS.md#adr-006); the copy of alert rules is synced manually |
+| Whoever can push to `main` controls production | this is how auto-deploy works; branch protection for a private repository requires a paid plan | account 2FA, a single collaborator with write access; the CI key limits the damage ([ADR-016](/docs/en/DECISIONS.md#adr-016)) |
 | The classic registry token can read all packages of the account | GitHub Packages does not accept fine-grained tokens | read-only, 90-day lifetime, separate per environment; there is one package at the moment. Improvement — a machine account with access to this package only |
 | The registry token on the server is base64-encoded (`/root/.docker/config.json`) | this is how `docker login` stores it | `0600`, read-only |
 | GitHub actions are pinned to a major version, not to a commit hash | a trade-off for simplicity; only official `actions/*` and `docker/*` | minimal job permissions; the build job sees only `GITHUB_TOKEN` |
@@ -150,7 +150,7 @@ Goal: a leak of what CI uses does not give access to the server ([ADR-016](DECIS
 | One S3 key per bucket | the hosting provider does not issue separate keys | the test environment can delete production server backups but cannot decrypt them (different passwords); the test virtual machine (VM) is not reachable from the internet |
 | The monthly secondary backup copy is a manual step | the simplest option was chosen | the procedure and the backup age check are in OPERATIONS; improvement — a timer on the control node |
 | The Telegram token is in the request URL of the backup failure alert (`curl`) | this is how the Bot API works | root process, short-lived; the script does not log the URL |
-| A late failure after deploy is caught by alerts, not by CI | single user, the cost of the code outweighs the risk | [ADR-022](DECISIONS.md#adr-022): ~11–20 min until the alert |
+| A late failure after deploy is caught by alerts, not by CI | single user, the cost of the code outweighs the risk | [ADR-022](/docs/en/DECISIONS.md#adr-022): ~11–20 min until the alert |
 
 ## Repository publication
 
