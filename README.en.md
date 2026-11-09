@@ -88,7 +88,7 @@ flowchart LR
 
 ```bash
 ssh-copy-id -i <public_key> <user>@<server_address>
-ssh -o PasswordAuthentication=no <user>@<server_address> id    # key-only login works
+ssh -o PasswordAuthentication=no <user>@<server_address> id    # key-only login
 ```
 
 - access to Ubuntu mirrors, `download.docker.com`, Docker Hub, `ghcr.io`, `api.telegram.org` (or step 7).
@@ -150,31 +150,64 @@ proxy_env: {}
 `host_vars/<host>/vars.yml`:
 
 ```yaml
+# basic
 ansible_host: "{{ vault_ansible_host }}"
+
+# auth
 ansible_user: "{{ vault_ansible_user }}"
 ansible_ssh_private_key_file: "{{ vault_ansible_ssh_private_key_file }}"
-common_swap_size_mb: 512
 
+# swap & ufw
+common_swap_size_mb: 512
 security_ufw_allowed_ports:
   - { name: Maxapoc-proxy, proto: tcp, port: 8443 }
   - { name: Zabbix-hoster-1, proto: tcp, port: 10050, src: "{{ vault_hoster_zabbix_addrs[0] }}" }
 
-# maxapoc_proxy_metrics_bind: <address>          # default 127.0.0.1
-# maxapoc_monitoring_enabled: false
-maxapoc_proxy_image: ghcr.io/<owner>/maxapoc-proxy@sha256:<digest>   # fallback initial version
+# maxapoc_proxy
+  # basic
+# maxapoc_proxy_metrics_bind: <адрес>            # по умолчанию 127.0.0.1
+  #Deploy rules
+maxapoc_proxy_image: ghcr.io/<владелец>/maxapoc-proxy@sha256:<digest>   # запасная начальная версия
 maxapoc_proxy_registry_token: "{{ vault_maxapoc_proxy_registry_token }}"
+  # Certificates
+maxapoc_proxy_server_crt: "{{ vault_maxapoc_proxy_server_crt }}"
+maxapoc_proxy_server_key: "{{ vault_maxapoc_proxy_server_key }}"
+maxapoc_proxy_ca_crt: "{{ vault_maxapoc_proxy_ca_crt }}"
+  # App keys
+maxapoc_proxy_app_key: "{{ vault_maxapoc_proxy_app_key }}"
+  # GitHub Repos
+maxapoc_proxy_gh_app_token: "{{ vault_maxapoc_proxy_gh_app_token }}"
+maxapoc_proxy_gh_hub_token: "{{ vault_maxapoc_proxy_gh_hub_token }}"
+  # LLM-gateway keys
+maxapoc_proxy_llm_odirouter_key: "{{ vault_maxapoc_proxy_llm_odirouter_key }}"
+maxapoc_proxy_llm_routeway_key: "{{ vault_maxapoc_proxy_llm_routeway_key }}"
 
+# Deploy access (CI)
 maxapoc_deploy_access_enabled: true
-maxapoc_deploy_pubkey: "ssh-ed25519 AAAA… maxapoc-deploy@<environment>-ci"
+maxapoc_deploy_pubkey: "ssh-ed25519 AAAA… maxapoc-deploy@<окружение>-ci"
 
+# maxapoc_monitoring_stack
+# maxapoc_monitoring_enabled: false
+  # Alertmanager
+maxapoc_monitoring_telegram_token: "{{ vault_maxapoc_monitoring_telegram_token }}"
+maxapoc_monitoring_telegram_chat_id: "{{ vault_maxapoc_monitoring_telegram_chat_id }}"
+  # Grafana
+maxapoc_monitoring_grafana_admin_password: "{{ vault_maxapoc_monitoring_grafana_admin_password }}"
+
+# Backup
+  # basic
 backup_enabled: true
-backup_repo_name: <test|prod>
-backup_s3_access_key: "{{ vault_backup_s3_access_key }}"
-backup_s3_secret_key: "{{ vault_backup_s3_secret_key }}"
-backup_restic_password: "{{ vault_backup_restic_password }}"
-backup_sqlite_dbs: []            # [{ src: /path/to/database.db, name: snapshot.db }]
 backup_paths:
   - /opt/maxapoc/proxy/vps/release.env
+  # restic
+backup_repo_name: <test|prod>
+backup_restic_password: "{{ vault_backup_restic_password }}"
+  # S3
+backup_s3_access_key: "{{ vault_backup_s3_access_key }}"
+backup_s3_secret_key: "{{ vault_backup_s3_secret_key }}"
+  # SQLite
+backup_sqlite_dbs: []            # [{ src: /путь/к/базе.db, name: снимок.db }]
+  # alerting
 backup_alert_telegram_token: "{{ maxapoc_monitoring_telegram_token }}"
 backup_alert_telegram_chat_id: "{{ maxapoc_monitoring_telegram_chat_id }}"
 
@@ -182,19 +215,6 @@ backup_alert_telegram_chat_id: "{{ maxapoc_monitoring_telegram_chat_id }}"
 maxapoc_repo_url: "{{ vault_maxapoc_repo_url }}"
 maxapoc_proxy_gh_app_repo: "{{ vault_maxapoc_proxy_gh_app_repo }}"
 maxapoc_proxy_gh_hub_repo: "{{ vault_maxapoc_proxy_gh_hub_repo }}"
-
-# References to secrets in vault.yml
-maxapoc_proxy_gh_app_token: "{{ vault_maxapoc_proxy_gh_app_token }}"
-maxapoc_proxy_app_key: "{{ vault_maxapoc_proxy_app_key }}"
-maxapoc_proxy_llm_odirouter_key: "{{ vault_maxapoc_proxy_llm_odirouter_key }}"
-maxapoc_proxy_llm_routeway_key: "{{ vault_maxapoc_proxy_llm_routeway_key }}"
-maxapoc_proxy_gh_hub_token: "{{ vault_maxapoc_proxy_gh_hub_token }}"
-maxapoc_proxy_server_crt: "{{ vault_maxapoc_proxy_server_crt }}"
-maxapoc_proxy_server_key: "{{ vault_maxapoc_proxy_server_key }}"
-maxapoc_proxy_ca_crt: "{{ vault_maxapoc_proxy_ca_crt }}"
-maxapoc_monitoring_telegram_token: "{{ vault_maxapoc_monitoring_telegram_token }}"
-maxapoc_monitoring_telegram_chat_id: "{{ vault_maxapoc_monitoring_telegram_chat_id }}"
-maxapoc_monitoring_grafana_admin_password: "{{ vault_maxapoc_monitoring_grafana_admin_password }}"
 ```
 
 Defaults are in `roles/<role>/defaults/main.yml`.
