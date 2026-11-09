@@ -93,7 +93,7 @@ backup_sqlite_dbs:
 backup_alert_telegram_token: "{{ maxapoc_monitoring_telegram_token }}"
 backup_alert_telegram_chat_id: "{{ maxapoc_monitoring_telegram_chat_id }}"
 
-# Application repo's
+# Application repositories
 maxapoc_repo_url: "{{ vault_maxapoc_repo_url }}"
 maxapoc_proxy_gh_app_repo: "{{ vault_maxapoc_proxy_gh_app_repo }}"
 maxapoc_proxy_gh_hub_repo: "{{ vault_maxapoc_proxy_gh_hub_repo }}"
