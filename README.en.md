@@ -165,9 +165,9 @@ security_ufw_allowed_ports:
 
 # maxapoc_proxy
   # basic
-# maxapoc_proxy_metrics_bind: <адрес>            # по умолчанию 127.0.0.1
+# maxapoc_proxy_metrics_bind: <адрес>            # by default 127.0.0.1
   #Deploy rules
-maxapoc_proxy_image: ghcr.io/<владелец>/maxapoc-proxy@sha256:<digest>   # запасная начальная версия
+maxapoc_proxy_image: ghcr.io/<владелец>/maxapoc-proxy@sha256:<digest>   # fallback initial version
 maxapoc_proxy_registry_token: "{{ vault_maxapoc_proxy_registry_token }}"
   # Certificates
 maxapoc_proxy_server_crt: "{{ vault_maxapoc_proxy_server_crt }}"
@@ -206,7 +206,7 @@ backup_restic_password: "{{ vault_backup_restic_password }}"
 backup_s3_access_key: "{{ vault_backup_s3_access_key }}"
 backup_s3_secret_key: "{{ vault_backup_s3_secret_key }}"
   # SQLite
-backup_sqlite_dbs: []            # [{ src: /путь/к/базе.db, name: снимок.db }]
+backup_sqlite_dbs: []            # [{ src: /path/to/base.db, name: snapshot.db }]
   # alerting
 backup_alert_telegram_token: "{{ maxapoc_monitoring_telegram_token }}"
 backup_alert_telegram_chat_id: "{{ maxapoc_monitoring_telegram_chat_id }}"
