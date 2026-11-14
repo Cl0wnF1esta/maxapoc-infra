@@ -1,5 +1,5 @@
 # Архитектура maxapoc-infra
-**Русский** | [English](en/ARCHITECTURE.md)
+**Русский** | [English](en/ARCHITECTURE.en.md)
 
 ## Компоненты и ответственность
 
